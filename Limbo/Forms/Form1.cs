@@ -375,7 +375,7 @@ namespace Limbo
         }
         async Task StartBet()
         {
-            if(running == true)
+            while(running == true)
             {
                 if (beginMs == 0)
                 {
@@ -383,8 +383,6 @@ namespace Limbo
                 }
                 await LimboBet();
                 TimerFunc(beginMs);
-                await StartBet();
-
             }
         }
         async Task LimboBet()
