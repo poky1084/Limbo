@@ -257,6 +257,7 @@ namespace Limbo
             {
                 luaPrint("Called stop.");
                 running = false;
+                sim = false;
                 bSta();
             });
 
@@ -972,7 +973,7 @@ namespace Limbo
         {
             while(sim == true)
             {
-                if(nonce > stopNonce)
+                if(nonce > stopNonce || balanceSim < amount)
                 {
                     SimulateButton_Click_1(this, new EventArgs());
                     sim = false;
@@ -985,7 +986,7 @@ namespace Limbo
                 decimal payoutMultiplier = 0;
                 currentWager += amount;
                 string winStatus = "lose";
-                if (result >= (decimal)target)
+                if (result > (decimal)target)
                 {
                     losestreak = 0;
                     winstreak++;
@@ -1177,7 +1178,17 @@ namespace Limbo
                 amount = Lastbet;
                 currencySelected = (string)lua["currency"];
                 target = (double)lua["target"];
-                balanceSim = (decimal)(double)lua["balance"];
+                try
+                {
+                    balanceSim = (decimal)(double)lua["balance"];
+                }
+                catch(Exception ex)
+                {
+                    MessageBox.Show("Please set 'balance = x' variable from Lua script.");
+                    SimulateButton_Click_1(this, new EventArgs());
+                    return;
+                }
+                
                 balanceLabel.Text = String.Format("{0} {1}", balanceSim.ToString("0.00000000"), currencySelected);
                 Task.Run(() => SimulateRun());
             }
