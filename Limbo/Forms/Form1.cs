@@ -704,7 +704,13 @@ namespace Limbo
             xList.Add(0);
             yList.Add(0);
             data.Clear();
-            SetStatistics();
+            profitLabel.Text = currentProfit.ToString("0.00000000");
+            wagerLabel.Text = currentWager.ToString("0.00000000");
+            wltLabel.Text = String.Format("{0} / {1} / {2}", wins.ToString(), losses.ToString(), (wins + losses).ToString());
+            currentStreakLabel.Text = String.Format("{0} / {1} / {2}", (winstreak > 0) ? winstreak.ToString() : (-losestreak).ToString(), highestStreak.Max().ToString(), lowestStreak.Min().ToString());
+            lowestProfitLabel.Text = lowestProfit.Min().ToString("0.00000000");
+            highestProfitLabel.Text = highestProfit.Max().ToString("0.00000000");
+            highestBetLabel.Text = highestBet.Max().ToString("0.00000000");
         }
 
         private void CommandButton2_Click(object sender, EventArgs e)
