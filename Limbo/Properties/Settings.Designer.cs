@@ -72,5 +72,53 @@ namespace Limbo.Properties {
                 this["textCode"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string serverSeed {
+            get {
+                return ((string)(this["serverSeed"]));
+            }
+            set {
+                this["serverSeed"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string clientSeed {
+            get {
+                return ((string)(this["clientSeed"]));
+            }
+            set {
+                this["clientSeed"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public int nonce {
+            get {
+                return ((int)(this["nonce"]));
+            }
+            set {
+                this["nonce"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("10")]
+        public int nonceStop {
+            get {
+                return ((int)(this["nonceStop"]));
+            }
+            set {
+                this["nonceStop"] = value;
+            }
+        }
     }
 }

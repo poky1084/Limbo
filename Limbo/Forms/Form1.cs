@@ -45,7 +45,14 @@ namespace Limbo
         public string StakeSite = "stake.com";
         public string token = "";
 
+        public string clientSeed = "";
+        public string serverSeed = "";
+        public int nonce = 1;
+        public decimal balanceSim = 0;
+        public int stopNonce = 0;
+
         public bool running = false;
+        public bool sim = false;
         public int counter = 0;
 
         public string currencySelected = "btc";
@@ -82,10 +89,13 @@ namespace Limbo
 
             this.listView1.ItemChecked += this.listView1_ItemChecked;
             this.CommandBox2.KeyDown += this.CmdBox_KeyDown;
+            this.listBox3.KeyDown += this.listBox3_KeyDown;
+            //this.listBox3.Click += this.listBox3_Click;
 
             richTextBox2.ReadOnly = true;
             richTextBox2.BackColor = Color.FromArgb(249, 249, 249);
             listView1.BackColor = Color.FromArgb(249,249,249);
+            listBox3.BackColor = Color.FromArgb(249, 249, 249);
             //listView1.Hide();
 
             Text += " - " + Application.ProductVersion;
@@ -139,6 +149,26 @@ namespace Limbo
             richTextBox1.Text = Properties.Settings.Default.textCode;
 
         }
+        private void listBox3_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Control == true && e.KeyCode == Keys.C)
+            {
+                string tmpStr = "";
+                foreach (var item in listBox3.SelectedItems)
+                {
+                    tmpStr += listBox3.GetItemText(item) + "\n";
+                }
+                Clipboard.SetData(DataFormats.StringFormat, tmpStr);
+            }
+            if (e.Control == true && e.KeyCode == Keys.A)
+            {
+                for (int i = 0; i < listBox3.Items.Count; i++)
+                {
+                    listBox3.SetSelected(i, true);
+                }
+            }
+        }
+
         private void Application_ApplicationExit(object sender, EventArgs e)
         {
 
@@ -156,7 +186,7 @@ namespace Limbo
             lua.RegisterFunction("resetstats", this, new dResetStat(luaResetStat).Method);
         }
 
-        private void SetLuaVariables(List<int> drawn)
+        private void SetLuaVariables()
         {
             lua["balance"] = currentBal;
             lua["profit"] = currentProfit;
@@ -209,6 +239,7 @@ namespace Limbo
                 log.BackColor = Color.FromArgb(250,185,170);
             }
         }
+
         private void SetStatistics()
         {
             balanceLabel.Text = String.Format("{0} {1}", currentBal.ToString("0.00000000"), currencySelected);
@@ -341,7 +372,7 @@ namespace Limbo
 
                 try
                 {
-                    SetLuaVariables(new List<int> { });
+                    SetLuaVariables();
                     LuaRuntime.SetLua(lua);
 
 
@@ -512,7 +543,7 @@ namespace Limbo
  
                         try
                         {
-                            SetLuaVariables(response.data.limboBet.state.drawnNumbers);
+                            SetLuaVariables();
                             LuaRuntime.SetLua(lua);
 
 
@@ -929,7 +960,253 @@ namespace Limbo
             textBox1.Text = Properties.Settings.Default.token;
             comboBox1.SelectedIndex = Properties.Settings.Default.indexCurrency;
             SiteComboBox2.SelectedIndex = Properties.Settings.Default.indexSite;
+            ServerSeedBox.Text = Properties.Settings.Default.serverSeed;
+            ClientSeedBox.Text = Properties.Settings.Default.clientSeed;
+            NonceBox.Text = Properties.Settings.Default.nonce.ToString();
+            NonceStopBox.Text = Properties.Settings.Default.nonceStop.ToString();
+        }
 
+  
+        
+        private void SimulateRun()
+        {
+            while(sim == true)
+            {
+                if(nonce > stopNonce)
+                {
+                    SimulateButton_Click_1(this, new EventArgs());
+                    sim = false;
+                    break;
+                }
+                decimal result = LimboResult(serverSeed, clientSeed, nonce);
+                nonce += 1;
+
+                decimal payout = 0;
+                decimal payoutMultiplier = 0;
+                currentWager += amount;
+                string winStatus = "lose";
+                if (result >= (decimal)target)
+                {
+                    losestreak = 0;
+                    winstreak++;
+                    isWin = true;
+                    wins++;
+                    payout = (decimal)target * amount;
+                    payoutMultiplier = (decimal)target;
+                    winStatus = "win";
+                }
+                else
+                {
+                    losestreak++;
+                    winstreak = 0;
+                    isWin = false;
+                    losses++;
+
+                }
+
+
+                currentProfit += payout - amount;
+                balanceSim += payout - amount;
+                //profitLabel.Text = currentProfit.ToString("0.00000000");
+                TargetLabeL.Text = target.ToString("0.00") + "x";
+                ResultLabeL.Text = result.ToString("0.00") + "x";
+
+                last.target = target;
+                last.result = (double)result;
+
+
+                highestStreak.Add(winstreak);
+                highestStreak = new List<int> { highestStreak.Max() };
+                lowestStreak.Add(-losestreak);
+                lowestStreak = new List<int> { lowestStreak.Min() };
+
+                if (currentProfit < 0)
+                {
+                    lowestProfit.Add(currentProfit);
+                    lowestProfit = new List<decimal> { lowestProfit.Min() };
+                }
+                else
+                {
+                    highestProfit.Add(currentProfit);
+                    highestProfit = new List<decimal> { highestProfit.Max() };
+                }
+
+                highestBet.Add(amount);
+                highestBet = new List<decimal> { highestBet.Max() };
+                this.Invoke((MethodInvoker)delegate ()
+                {   
+                    balanceLabel.Text = String.Format("{0} {1}", balanceSim.ToString("0.00000000"), currencySelected);
+                    profitLabel.Text = currentProfit.ToString("0.00000000");
+                    wagerLabel.Text = currentWager.ToString("0.00000000");
+                    wltLabel.Text = String.Format("{0} / {1} / {2}", wins.ToString(), losses.ToString(), (wins + losses).ToString());
+                    currentStreakLabel.Text = String.Format("{0} / {1} / {2}", (winstreak > 0) ? winstreak.ToString() : (-losestreak).ToString(), highestStreak.Max().ToString(), lowestStreak.Min().ToString());
+                    lowestProfitLabel.Text = lowestProfit.Min().ToString("0.00000000");
+                    highestProfitLabel.Text = highestProfit.Max().ToString("0.00000000");
+                    highestBetLabel.Text = highestBet.Max().ToString("0.00000000");
+                    Application.DoEvents();
+                });
+                //SetStatistics();
+                string box = String.Format("[{0}] target: {4}x  |   result:  {1}   |  profit:  {2}   [{3}]", nonce - 1, result.ToString("0.0000"), currentProfit.ToString("0.00000000"), winStatus, target.ToString("0.00"));
+                listBox3.Items.Insert(0, box);
+                if(listBox3.Items.Count > 200)
+                {
+                    listBox3.Items.RemoveAt(listBox3.Items.Count - 1);
+                }
+                try
+                {
+                    lua["balance"] = balanceSim;
+                    lua["profit"] = currentProfit;
+                    lua["currentstreak"] = (winstreak > 0) ? winstreak : -losestreak;
+                    lua["previousbet"] = Lastbet;
+                    lua["nextbet"] = Lastbet;
+                    lua["bets"] = wins + losses;
+                    lua["wins"] = wins;
+                    lua["losses"] = losses;
+                    lua["currency"] = currencySelected;
+                    lua["wagered"] = currentWager;
+                    lua["win"] = isWin;
+
+                    lua["lastBet"] = last;
+                    LuaRuntime.SetLua(lua);
+
+
+                    LuaRuntime.Run("dobet()");
+
+                }
+                catch (Exception ex)
+                {
+                    luaPrint("Lua ERROR!!");
+                    luaPrint(ex.Message);
+                    sim = false;
+                }
+                Lastbet = (decimal)(double)lua["nextbet"];
+                amount = Lastbet;
+                currencySelected = (string)lua["currency"];
+                target = (double)lua["target"];
+                
+            }
+        }
+        static decimal LimboResult(string serverSeed, string clientSeed, int nonce)
+        {
+            string nonceSeed = string.Format("{0}:{1}:{2}", clientSeed, nonce, 0);
+
+            string hex = HmacSha256Digest(nonceSeed, serverSeed);
+            decimal end = 0;
+            for (int i = 0; i < 4; i++)
+            {
+                end += (decimal)(Convert.ToInt32(hex.Substring(i * 2, 2), 16) / Math.Pow(256, i + 1));
+            }
+            end *= 16777216;
+            end = 16777216 / (Math.Floor(end) + 1) * (decimal)(1 - 0.01);
+            return end;
+        }
+
+        public static string HmacSha256Digest(string message, string secret)
+        {
+            ASCIIEncoding encoding = new ASCIIEncoding();
+            byte[] keyBytes = encoding.GetBytes(secret);
+            byte[] messageBytes = encoding.GetBytes(message);
+            System.Security.Cryptography.HMACSHA256 cryptographer = new System.Security.Cryptography.HMACSHA256(keyBytes);
+
+            byte[] bytes = cryptographer.ComputeHash(messageBytes);
+
+            return BitConverter.ToString(bytes).Replace("-", "").ToLower();
+        }
+
+        private void ServerSeedBox_TextChanged(object sender, EventArgs e)
+        {       
+            serverSeed = ServerSeedBox.Text;
+            Properties.Settings.Default.serverSeed = serverSeed;
+        }
+
+        private void ClientSeedBox_TextChanged(object sender, EventArgs e)
+        {
+            clientSeed = ClientSeedBox.Text;
+            Properties.Settings.Default.clientSeed = clientSeed;
+        }
+
+        private void NonceBox_TextChanged(object sender, EventArgs e)
+        {
+            nonce = Int32.Parse(NonceBox.Text);
+            Properties.Settings.Default.nonce = nonce;
+        }
+
+        private void SimulateButton_Click_1(object sender, EventArgs e)
+        {
+            if (SimulateButton.Text.Contains("Off"))
+            {
+                SimulateButton.Text = "Simulate";
+                sim = false;
+            }
+            else
+            {
+                nonce = Int32.Parse(NonceBox.Text);
+                serverSeed = ServerSeedBox.Text;
+                clientSeed = ClientSeedBox.Text;
+                linkLabel1_LinkClicked(this, new LinkLabelLinkClickedEventArgs(new LinkLabel.Link()));
+                SimulateButton.Text = "Off";
+                sim = true;
+                try
+                {
+                    
+                    lua["profit"] = currentProfit;
+                    lua["currentstreak"] = (winstreak > 0) ? winstreak : -losestreak;
+                    lua["previousbet"] = Lastbet;
+                    lua["nextbet"] = Lastbet;
+                    lua["bets"] = wins + losses;
+                    lua["wins"] = wins;
+                    lua["losses"] = losses;
+                    lua["currency"] = currencySelected;
+                    lua["wagered"] = currentWager;
+                    lua["win"] = isWin;
+                    lua["lastBet"] = last;
+                    LuaRuntime.SetLua(lua);
+
+
+                    LuaRuntime.Run(richTextBox1.Text);
+
+
+                }
+                catch (Exception ex)
+                {
+                    luaPrint("Lua ERROR!!");
+                    luaPrint(ex.Message);
+                    sim = false;
+                }
+                Lastbet = (decimal)(double)lua["nextbet"];
+                amount = Lastbet;
+                currencySelected = (string)lua["currency"];
+                target = (double)lua["target"];
+                balanceSim = (decimal)(double)lua["balance"];
+                balanceLabel.Text = String.Format("{0} {1}", balanceSim.ToString("0.00000000"), currencySelected);
+                Task.Run(() => SimulateRun());
+            }
+        }
+
+
+
+        private void wltLabel_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void NonceStopBox_TextChanged(object sender, EventArgs e)
+        {
+            stopNonce = Int32.Parse(NonceStopBox.Text);
+            Properties.Settings.Default.nonceStop = stopNonce;
+        }
+        private void listBox3_Click(object sender, EventArgs e)
+        {
+            //listBox3.ClearSelected();
+        }
+        private void listBox3_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            
+        }
+
+        private void ResetBoxSeed_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            listBox3.Items.Clear();
         }
     }
     public class lastbet
