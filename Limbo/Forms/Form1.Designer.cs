@@ -83,6 +83,7 @@
             this.listBox2 = new System.Windows.Forms.ListBox();
             this.listBox1 = new System.Windows.Forms.ListBox();
             this.tabPage5 = new System.Windows.Forms.TabPage();
+            this.ResetBoxSeed = new System.Windows.Forms.LinkLabel();
             this.label15 = new System.Windows.Forms.Label();
             this.NonceStopBox = new System.Windows.Forms.TextBox();
             this.listBox3 = new System.Windows.Forms.ListBox();
@@ -94,7 +95,6 @@
             this.ServerSeedBox = new System.Windows.Forms.TextBox();
             this.SimulateButton = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
-            this.ResetBoxSeed = new System.Windows.Forms.LinkLabel();
             this.statusStrip1.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -686,6 +686,7 @@
             "lastBet.result -- get last result",
             "lastBet.target -- get last target",
             "currentstreak -- get current win/lose streak",
+            "currentprofit -- get last bet profit",
             "bets --get total bets",
             "profit -- get total profit",
             "balance -- get current balance",
@@ -715,6 +716,17 @@
             this.tabPage5.TabIndex = 4;
             this.tabPage5.Text = "Seed";
             this.tabPage5.UseVisualStyleBackColor = true;
+            // 
+            // ResetBoxSeed
+            // 
+            this.ResetBoxSeed.AutoSize = true;
+            this.ResetBoxSeed.Location = new System.Drawing.Point(336, 110);
+            this.ResetBoxSeed.Name = "ResetBoxSeed";
+            this.ResetBoxSeed.Size = new System.Drawing.Size(54, 13);
+            this.ResetBoxSeed.TabIndex = 62;
+            this.ResetBoxSeed.TabStop = true;
+            this.ResetBoxSeed.Text = "Reset List";
+            this.ResetBoxSeed.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.ResetBoxSeed_LinkClicked);
             // 
             // label15
             // 
@@ -825,17 +837,6 @@
             this.button1.Text = "Start";
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
-            // 
-            // ResetBoxSeed
-            // 
-            this.ResetBoxSeed.AutoSize = true;
-            this.ResetBoxSeed.Location = new System.Drawing.Point(336, 110);
-            this.ResetBoxSeed.Name = "ResetBoxSeed";
-            this.ResetBoxSeed.Size = new System.Drawing.Size(54, 13);
-            this.ResetBoxSeed.TabIndex = 62;
-            this.ResetBoxSeed.TabStop = true;
-            this.ResetBoxSeed.Text = "Reset List";
-            this.ResetBoxSeed.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.ResetBoxSeed_LinkClicked);
             // 
             // Form1
             // 

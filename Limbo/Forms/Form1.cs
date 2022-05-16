@@ -186,7 +186,7 @@ namespace Limbo
             lua.RegisterFunction("resetstats", this, new dResetStat(luaResetStat).Method);
         }
 
-        private void SetLuaVariables()
+        private void SetLuaVariables(decimal profitCurr)
         {
             lua["balance"] = currentBal;
             lua["profit"] = currentProfit;
@@ -201,6 +201,7 @@ namespace Limbo
             lua["win"] = isWin;
 
             lua["lastBet"] = last;
+            lua["currentprofit"] = profitCurr;
         }
 
         private void GetLuaVariables()
@@ -373,7 +374,7 @@ namespace Limbo
 
                 try
                 {
-                    SetLuaVariables();
+                    SetLuaVariables(0);
                     LuaRuntime.SetLua(lua);
 
 
@@ -490,6 +491,7 @@ namespace Limbo
                         Log(response);
                         CheckBalance();
                         
+                        decimal profitCurr = response.data.limboBet.payout - response.data.limboBet.amount;
                         currentProfit += response.data.limboBet.payout - response.data.limboBet.amount;
                         //profitLabel.Text = currentProfit.ToString("0.00000000");
                         TargetLabeL.Text = response.data.limboBet.state.multiplierTarget.ToString("0.00") + "x";
@@ -544,7 +546,7 @@ namespace Limbo
  
                         try
                         {
-                            SetLuaVariables();
+                            SetLuaVariables(profitCurr);
                             LuaRuntime.SetLua(lua);
 
 
@@ -1011,7 +1013,7 @@ namespace Limbo
 
                 }
 
-
+                decimal profitCurr = payout - amount;
                 currentProfit += payout - amount;
                 balanceSim += payout - amount;
                 //profitLabel.Text = currentProfit.ToString("0.00000000");
@@ -1074,6 +1076,7 @@ namespace Limbo
                     lua["win"] = isWin;
 
                     lua["lastBet"] = last;
+                    lua["currentprofit"] = profitCurr;
                     LuaRuntime.SetLua(lua);
 
 
