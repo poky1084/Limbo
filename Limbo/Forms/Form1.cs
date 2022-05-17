@@ -30,6 +30,9 @@ namespace Limbo
         delegate void dStop();
         delegate void dResetSeed();
         delegate void dResetStat();
+        delegate void dSeedEmpty();
+        delegate void dVaultEmpty(decimal sentamount);
+        delegate void dTipEmpty(string username, decimal amount);
 
         public List<TabControl> listLua = new List<TabControl>();
         public List<ListView> listLogs = new List<ListView>();
@@ -135,7 +138,7 @@ namespace Limbo
             ch.Width = 400;
             panel1.Controls.Add(ch);
 
-            RegisterLua();
+            //RegisterLua();
 
             richTextBox1 = new FastColoredTextBox();
             richTextBox1.Dock = DockStyle.Fill;
@@ -177,7 +180,7 @@ namespace Limbo
         }
         private void RegisterLua()
         {
-
+            
             lua.RegisterFunction("vault", this, new dvault(luaVault).Method);
             lua.RegisterFunction("tip", this, new dtip(luatip).Method);
             lua.RegisterFunction("print", this, new LogConsole(luaPrint).Method);
@@ -274,7 +277,7 @@ namespace Limbo
         {
             this.Invoke((MethodInvoker)delegate ()
             {
-                //luaPrint("Tipping not available.");
+                luaPrint("Tipping not available.");
 
             });
         }
@@ -370,7 +373,7 @@ namespace Limbo
         {
             if (running == false)
             {
-                
+                RegisterLua();
                 await CheckBalance();
                 
                 try
@@ -1157,6 +1160,7 @@ namespace Limbo
                 linkLabel1_LinkClicked(this, new LinkLabelLinkClickedEventArgs(new LinkLabel.Link()));
                 SimulateButton.Text = "Off";
                 sim = true;
+                RegisterSim();
                 lua["balance"] = null;
                 try
                 {
@@ -1188,14 +1192,15 @@ namespace Limbo
                 Lastbet = (decimal)(double)lua["nextbet"];
                 amount = Lastbet;
                 currencySelected = (string)lua["currency"];
-                target = (double)lua["target"];
+
                 try
                 {
+                    target = (double)lua["target"];
                     balanceSim = (decimal)(double)lua["balance"];
                 }
                 catch(Exception ex)
                 {
-                    MessageBox.Show("Please set 'balance = x' variable from Lua script.");
+                    MessageBox.Show("Please set 'balance = x' variable on top of script.");
                     SimulateButton_Click_1(this, new EventArgs());
                     return;
                 }
@@ -1229,6 +1234,42 @@ namespace Limbo
         private void ResetBoxSeed_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             listBox3.Items.Clear();
+        }
+
+        private void RegisterSim()
+        {
+
+            lua.RegisterFunction("vault", this, new dVaultEmpty(EmptyVaultFunc).Method);
+            lua.RegisterFunction("tip", this, new dTipEmpty(EmptyTipFunc).Method);
+            lua.RegisterFunction("print", this, new LogConsole(luaPrint).Method);
+            lua.RegisterFunction("stop", this, new dStop(luaStop).Method);
+            lua.RegisterFunction("resetseed", this, new dSeedEmpty(EmptySeedFunc).Method);
+            lua.RegisterFunction("resetstats", this, new dResetStat(luaResetStat).Method);
+        }
+
+        public void EmptySeedFunc()
+        {
+            this.Invoke((MethodInvoker)delegate ()
+            {
+                luaPrint("Function not available in simulation. (resetseed)");
+
+            });
+        }
+        public void EmptyVaultFunc(decimal amount)
+        {
+            this.Invoke((MethodInvoker)delegate ()
+            {
+                luaPrint("Function not available in simulation. (vault)");
+
+            });
+        }
+        public void EmptyTipFunc(string user, decimal amount)
+        {
+            this.Invoke((MethodInvoker)delegate ()
+            {
+                luaPrint("Function not available in simulation. (tip)");
+
+            });
         }
     }
     public class lastbet
