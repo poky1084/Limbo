@@ -370,8 +370,9 @@ namespace Limbo
         {
             if (running == false)
             {
+                
                 await CheckBalance();
-
+                
                 try
                 {
                     SetLuaVariables(0);
@@ -1055,7 +1056,7 @@ namespace Limbo
                     Application.DoEvents();
                 });
                 //SetStatistics();
-                string box = String.Format("[{0}] target: {4}x  |   result:  {1}   |  profit:  {2}   [{3}]", nonce - 1, result.ToString("0.0000"), currentProfit.ToString("0.00000000"), winStatus, target.ToString("0.00"));
+                string box = String.Format("[{0}] {4}x  |  {1}   |  bet: {5}  |  profit:  {2}   [{3}]", nonce - 1, result.ToString("0.0000"), currentProfit.ToString("0.00000000"), winStatus, target.ToString("0.00"), amount.ToString("0.00000000"));
                 listBox3.Items.Insert(0, box);
                 if(listBox3.Items.Count > 200)
                 {
@@ -1156,6 +1157,7 @@ namespace Limbo
                 linkLabel1_LinkClicked(this, new LinkLabelLinkClickedEventArgs(new LinkLabel.Link()));
                 SimulateButton.Text = "Off";
                 sim = true;
+                lua["balance"] = null;
                 try
                 {
                     
