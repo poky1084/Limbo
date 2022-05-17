@@ -55,6 +55,7 @@ namespace Limbo
         public int stopNonce = 0;
 
         public bool running = false;
+        public bool ready = true;
         public bool sim = false;
         public int counter = 0;
 
@@ -195,7 +196,6 @@ namespace Limbo
             lua["profit"] = currentProfit;
             lua["currentstreak"] = (winstreak > 0) ? winstreak : -losestreak;
             lua["previousbet"] = Lastbet;
-            lua["nextbet"] = Lastbet;
             lua["bets"] = wins + losses;
             lua["wins"] = wins;
             lua["losses"] = losses;
@@ -207,13 +207,30 @@ namespace Limbo
             lua["currentprofit"] = profitCurr;
         }
 
+        private void UnSetVariables()
+        {
+            lua["balance"] = null;
+            lua["nextbet"] = null;
+            lua["target"] = null;
+        }
+
         private void GetLuaVariables()
         {
-            Lastbet = (decimal)(double)lua["nextbet"];
-            amount = Lastbet;
-            currencySelected = (string)lua["currency"];
-            target = (double)lua["target"];
-            TargetLabeL.Text = target.ToString("0.00") + "x";
+            try
+            {
+                Lastbet = (decimal)(double)lua["nextbet"];
+                amount = Lastbet;
+                currencySelected = (string)lua["currency"];
+                target = (double)lua["target"];
+                TargetLabeL.Text = target.ToString("0.00") + "x";
+            } 
+            catch (Exception e)
+            {
+                ready = false;
+                bSta();
+                luaPrint("Please set 'nextbet = x' and 'target = x' variable on top of script.");
+            }
+            
 
 
         }
@@ -373,11 +390,13 @@ namespace Limbo
         {
             if (running == false)
             {
+                ready = true;
                 RegisterLua();
                 await CheckBalance();
                 
                 try
                 {
+                    UnSetVariables();
                     SetLuaVariables(0);
                     LuaRuntime.SetLua(lua);
 
@@ -396,13 +415,20 @@ namespace Limbo
                 GetLuaVariables();
 
                 comboBox1.SelectedIndex = Array.FindIndex(curr, row => row == currencySelected.ToUpper());
+                if (ready == true)
+                {
+                    button1.Enabled = false;
+                    running = true;
+                    button1.Text = "Stop";
+                    comboBox1.Enabled = false;
+                    StartBet();
+                }
+                else
+                {
+                    bSta();
+                }
 
-                button1.Enabled = false;
-                running = true;
-                button1.Text = "Stop";
-                comboBox1.Enabled = false;
-
-                StartBet();
+                
             }
             else
             {
@@ -985,8 +1011,13 @@ namespace Limbo
         {
             while(sim == true)
             {
-                if(nonce > stopNonce || balanceSim < amount)
+                if(nonce > stopNonce || balanceSim < amount || target <= 1)
                 {
+                    if (target <= 1)
+                    {
+                        luaPrint("Lua ERROR!!");
+                        luaPrint("Lua: Target must be above 1.");
+                    }
                     SimulateButton_Click_1(this, new EventArgs());
                     sim = false;
                     break;
@@ -1162,13 +1193,14 @@ namespace Limbo
                 sim = true;
                 RegisterSim();
                 lua["balance"] = null;
+                lua["nextbet"] = null;
+                lua["target"] = null;
                 try
                 {
                     
                     lua["profit"] = currentProfit;
                     lua["currentstreak"] = (winstreak > 0) ? winstreak : -losestreak;
                     lua["previousbet"] = Lastbet;
-                    lua["nextbet"] = Lastbet;
                     lua["bets"] = wins + losses;
                     lua["wins"] = wins;
                     lua["losses"] = losses;
@@ -1189,18 +1221,19 @@ namespace Limbo
                     luaPrint(ex.Message);
                     sim = false;
                 }
-                Lastbet = (decimal)(double)lua["nextbet"];
-                amount = Lastbet;
-                currencySelected = (string)lua["currency"];
+                
 
                 try
                 {
+                    Lastbet = (decimal)(double)lua["nextbet"];
+                    amount = Lastbet;
+                    currencySelected = (string)lua["currency"];
                     target = (double)lua["target"];
                     balanceSim = (decimal)(double)lua["balance"];
                 }
                 catch(Exception ex)
                 {
-                    MessageBox.Show("Please set 'balance = x' variable on top of script.");
+                    luaPrint("Please set 'balance = x' and 'target = x' and 'nextbet = x' variable on top of script.");
                     SimulateButton_Click_1(this, new EventArgs());
                     return;
                 }
