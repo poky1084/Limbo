@@ -421,6 +421,7 @@ namespace Limbo
                     running = true;
                     button1.Text = "Stop";
                     comboBox1.Enabled = false;
+                    beginMs = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
                     StartBet();
                 }
                 else
@@ -445,7 +446,6 @@ namespace Limbo
                     beginMs = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
                 }
                 await LimboBet();
-                TimerFunc(beginMs);
             }
         }
         async Task LimboBet()
@@ -501,6 +501,8 @@ namespace Limbo
                     }
                     else
                     {
+                        TimerFunc(beginMs);
+
                         currentWager += response.data.limboBet.amount;
                         if (response.data.limboBet.payoutMultiplier > 0)
                         {
@@ -508,6 +510,7 @@ namespace Limbo
                             winstreak++;
                             isWin = true;
                             wins++;
+                            ResultLabeL.ForeColor = Color.LimeGreen;
                         }
                         else
                         {
@@ -515,6 +518,7 @@ namespace Limbo
                             winstreak = 0;
                             isWin = false;
                             losses++;
+                            ResultLabeL.ForeColor = Color.Red;
 
                         }
 
@@ -1038,6 +1042,7 @@ namespace Limbo
                     payout = (decimal)target * amount;
                     payoutMultiplier = (decimal)target;
                     winStatus = "win";
+                    ResultLabeL.ForeColor = Color.LimeGreen;
                 }
                 else
                 {
@@ -1045,7 +1050,7 @@ namespace Limbo
                     winstreak = 0;
                     isWin = false;
                     losses++;
-
+                    ResultLabeL.ForeColor = Color.Red;
                 }
 
                 decimal profitCurr = payout - amount;
@@ -1079,7 +1084,7 @@ namespace Limbo
                 highestBet = new List<decimal> { highestBet.Max() };
                 this.Invoke((MethodInvoker)delegate ()
                 {   
-                    balanceLabel.Text = String.Format("{0} {1}", balanceSim.ToString("0.00000000"), currencySelected);
+                    balanceLabel.Text = String.Format("{0}", balanceSim.ToString("0.00000000"));
                     profitLabel.Text = currentProfit.ToString("0.00000000");
                     wagerLabel.Text = currentWager.ToString("0.00000000");
                     wltLabel.Text = String.Format("{0} / {1} / {2}", wins.ToString(), losses.ToString(), (wins + losses).ToString());
@@ -1238,7 +1243,7 @@ namespace Limbo
                     return;
                 }
                 
-                balanceLabel.Text = String.Format("{0} {1}", balanceSim.ToString("0.00000000"), currencySelected);
+                balanceLabel.Text = String.Format("{0}", balanceSim.ToString("0.00000000"));
                 Task.Run(() => SimulateRun());
             }
         }
