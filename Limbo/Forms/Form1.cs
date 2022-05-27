@@ -5,6 +5,7 @@ using LiveCharts.WinForms;
 using Newtonsoft.Json;
 using RestSharp;
 using SharpLua;
+using SuperSocket.ClientEngine;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -12,15 +13,17 @@ using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Security.Authentication;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using WebSocket4Net;
 
 namespace Limbo
 {
     public partial class Form1 : Form
     {
-
+        private WebSocket chat_socket { get; set; }
         private FastColoredTextBox richTextBox1;
 
         LuaInterface lua = LuaRuntime.GetLua();
@@ -84,7 +87,7 @@ namespace Limbo
         public lastbet last = new lastbet();
 
         public string[] curr = { "BTC", "ETH", "LTC", "DOGE", "XRP", "BCH", "TRX", "EOS" };
-
+        private bool is_connected = false;
         public Form1()
         {
             InitializeComponent();
@@ -329,6 +332,15 @@ namespace Limbo
                 highestProfit = new List<decimal> { 0 };
                 lowestProfit = new List<decimal> { 0 };
                 highestBet = new List<decimal> { 0 };
+                wltLabel.Text = "0 / 0 / 0";
+                currentStreakLabel.Text = "0 / 0 / 0";
+                profitLabel.Text = currentProfit.ToString("0.00000000");
+                wagerLabel.Text = currentWager.ToString("0.00000000");
+                wltLabel.Text = String.Format("{0} / {1} / {2}", wins.ToString(), losses.ToString(), (wins + losses).ToString());
+                currentStreakLabel.Text = String.Format("{0} / {1} / {2}", (winstreak > 0) ? winstreak.ToString() : (-losestreak).ToString(), highestStreak.Max().ToString(), lowestStreak.Min().ToString());
+                lowestProfitLabel.Text = lowestProfit.Min().ToString("0.00000000");
+                highestProfitLabel.Text = highestProfit.Max().ToString("0.00000000");
+                highestBetLabel.Text = highestBet.Max().ToString("0.00000000");
             });
         }
 
@@ -361,7 +373,9 @@ namespace Limbo
             Properties.Settings.Default.token = token;
             if (token.Length == 96)
             {
+                Connect();
                 await Authorize();
+                
             }
             else
             {
@@ -448,6 +462,182 @@ namespace Limbo
                 await LimboBet();
             }
         }
+        private async Task Balances()
+        {
+
+            messagePayload messagePayload2 = new messagePayload();
+            messagePayload2.accessToken = token;
+            messagePayload2.query = "subscription AvailableBalances {\n  availableBalances {\n    amount\n    identifier\n    balance {\n      amount\n      currency\n    }\n  }\n}\n";
+            messageData messageData2 = new messageData();
+            messageData2.id = "6cc429c1-a18a-4a6a-819e-1c78c724b5f8";
+            messageData2.type = "subscribe";
+            messageData2.payload = messagePayload2;
+            this.chat_socket.Send(JsonConvert.SerializeObject(messageData2));
+
+        }
+        public void Connect()
+        {
+            try
+            {
+                Debug.WriteLine(StakeSite);
+                this.chat_socket = new WebSocket("wss://api." + StakeSite + "/websockets", "graphql-transport-ws", new List<KeyValuePair<string, string>>()
+                {
+                     new KeyValuePair<string, string>("jwt", token)
+                }, userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36", origin: "https://" + StakeSite, version: WebSocketVersion.Rfc6455, sslProtocols: SslProtocols.Tls12);
+                this.chat_socket.EnableAutoSendPing = true;
+                this.chat_socket.AutoSendPingInterval = 1000;
+                //this.lastmessage = DateTime.UtcNow;
+                this.chat_socket.MessageReceived += new EventHandler<MessageReceivedEventArgs>(this.chat_socket_MessageReceived);
+                this.chat_socket.Opened += new EventHandler(this.chat_socket_Opened);
+                this.chat_socket.Error += new EventHandler<ErrorEventArgs>(this.chat_socket_Error);
+                this.chat_socket.Closed += new EventHandler(this.chat_socket_Closed);
+                this.chat_socket.Open();
+            }
+            catch (Exception ex)
+            {
+                //Bsta();
+                Debug.WriteLine(ex.ToString());
+
+            }
+
+
+        }
+
+        private async void chat_socket_MessageReceived(object sender, MessageReceivedEventArgs e)
+        {
+            messageData _msg = JsonConvert.DeserializeObject<messageData>(e.Message);
+            string type = _msg.type;
+
+            if (type == "connection_ack")
+            {
+
+                is_connected = true;
+
+                await Balances();
+            }
+            else
+            {
+
+                if (type == "next")
+                {
+                    if (_msg.payload.errors.Count > 0)
+                    {
+                        if (_msg.payload.errors[0].message.Contains("invalid") || _msg.payload.errors[0].message.Contains("expired"))
+                        {
+                            this.Invoke((MethodInvoker)delegate ()
+                            {
+                                this.chat_socket.Close();
+                            });
+                        }
+                    }
+                    else
+                    {
+                        if (_msg.payload.data.availableBalances != null)
+                        {
+                            this.Invoke((MethodInvoker)delegate ()
+                            {
+                                if (_msg.payload.data.availableBalances.balance.currency == currencySelected.ToLower())
+                                {
+                                    currentBal = _msg.payload.data.availableBalances.balance.amount;
+                                    
+                                    try
+                                    {
+                                        lua["balance"] = currentBal;
+                                        LuaRuntime.SetLua(lua);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        luaPrint("Lua ERROR!!");
+                                        luaPrint(ex.Message);
+                                        running = false;
+                                        bSta();
+                                    }
+                                    balanceLabel.Text = String.Format("{0} {1}", currentBal.ToString("0.00000000"), currencySelected);
+                                    
+                                }
+                                
+                                var index = Array.FindIndex(curr, row => row.Contains(_msg.payload.data.availableBalances.balance.currency.ToUpper()));
+                                comboBox1.Items[index] = string.Format("{0} {1}", curr[index], _msg.payload.data.availableBalances.balance.amount.ToString("0.00000000"));
+
+
+
+
+
+                            });
+
+                        }
+                    }
+
+
+                }
+                else
+                {
+
+                }
+
+            }
+        }
+
+        private void chat_socket_Opened(object sender, EventArgs e)
+        {
+            try
+            {
+                toolStripStatusLabel1.Text = string.Format("{0}", "Connected");
+                this.chat_socket.Send(JsonConvert.SerializeObject(new messageData()
+                {
+                    type = "connection_init",
+                    payload = new messagePayload()
+                    {
+                        accessToken = token,
+                        language = "en"
+                    }
+                }));
+
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
+        }
+
+        private void chat_socket_Error(object sender, ErrorEventArgs e)
+        {
+            try
+            {
+                //Bsta();
+                Debug.WriteLine(e.Exception);
+            }
+            catch (Exception ex)
+            {
+                //Bsta();
+                Debug.WriteLine(ex.Message);
+            }
+        }
+
+        private async void chat_socket_Closed(object sender, EventArgs e)
+        {
+            try
+            {
+
+
+                if (!this.is_connected)
+                    return;
+                //this._from_chat_close = true;
+                await Task.Delay(400);
+                this.Invoke((MethodInvoker)delegate ()
+                {
+                    toolStripStatusLabel1.Text = string.Format("{0}", "Re-connecting...");
+                });
+                await Task.Delay(1000);
+                this.chat_socket.Open();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
+        }
+
+
         async Task LimboBet()
         {
             try
@@ -523,7 +713,7 @@ namespace Limbo
                         }
 
                         Log(response);
-                        CheckBalance();
+                        //CheckBalance();
                         
                         decimal profitCurr = response.data.limboBet.payout - response.data.limboBet.amount;
                         currentProfit += response.data.limboBet.payout - response.data.limboBet.amount;

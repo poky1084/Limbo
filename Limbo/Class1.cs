@@ -34,6 +34,9 @@ namespace Limbo
     }
     public class Data
     {
+        public availableBalances availableBalances { get; set; }
+        public chatMessages chatMessages { get; set; }
+        public crash crash { get; set; }
         public Betdata data { get; set; }
         public List<Errors> errors { get; set; }
     }
@@ -109,5 +112,115 @@ namespace Limbo
     {
         public User data { get; set; }
         public List<Errors> errors { get; set; }
+    }
+    public class messageData
+    {
+        public messageData() => this.payload = new messagePayload();
+
+        public string id { get; set; }
+
+        public string type { get; set; }
+
+        public messagePayload payload { get; set; }
+    }
+    public class messagePayload
+    {
+        public messagePayload()
+        {
+            ///this.variables = new object();
+            //this.extensions = new object();
+            this.data = new Data();
+            this.errors = new List<messageErrors>();
+        }
+
+        public string accessToken { get; set; }
+
+        public string operationName { get; set; }
+
+        public string key { get; set; }
+        public string query { get; set; }
+
+        public string language { get; set; }
+
+        public string lockdownToken { get; set; }
+        public BetClass variables { get; set; }
+
+        public string requestPolicy { get; set; }
+        public bool preferGetMethod { get; set; }
+        public bool suspense { get; set; }
+        public context context { get; set; }
+
+        public Data data { get; set; }
+
+        public List<messageErrors> errors { get; set; }
+    }
+    public class messageErrors
+    {
+        public messageErrors() => this.message = (string)null;
+
+        public string[] path { get; set; }
+
+        public string message { get; set; }
+    }
+
+    public class ChatInputs
+    {
+        public ChatInputs()
+        {
+
+        }
+    }
+
+
+
+    public class context
+    {
+        public string url { get; set; }
+    }
+
+ 
+    public class chatMessages
+    {
+        public string id { get; set; }
+        public ChatData data { get; set; }
+        public ChatUser user { get; set; }
+    }
+
+    public class ChatData
+    {
+        public string message { get; set; }
+
+    }
+    public class ChatUser
+    {
+        public string name { get; set; }
+
+    }
+    public class availableBalances
+    {
+        public decimal amount { get; set; }
+        public Balance balance { get; set; }
+    }
+
+    public class Balance
+    {
+        public decimal amount { get; set; }
+        public string currency { get; set; }
+    }
+
+    public class crash
+    {
+        public Event @event { get; set; }
+    }
+
+    public class Event
+    {
+        public string id { get; set; }
+        public string status { get; set; }
+        public object multiplier { get; set; }
+        public string startTime { get; set; }
+        public object nextRoundIn { get; set; }
+        public int elapsed { get; set; }
+        public string timestamp { get; set; }
     }
 }
