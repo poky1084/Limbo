@@ -86,13 +86,52 @@ namespace Limbo
 
         public lastbet last = new lastbet();
 
-        public string[] curr = { "BTC", "ETH", "LTC", "DOGE", "XRP", "BCH", "TRX", "EOS" };
+        public string[] currenciesAvailable = {
+            "BTC",
+            "ETH",
+            "LTC",
+            "DOGE",
+            "BCH",
+            "XRP",
+            "TRX",
+            "EOS",
+            "BNB",
+            "USDT",
+            "APE",
+            "BUSD",
+            "CRO",
+            "DAI",
+            "LINK",
+            "SAND",
+            "SHIB",
+            "UNI",
+            "USDC"
+       };
+
+
         private bool is_connected = false;
+
+        private void fillCurrencies()
+        {
+            // fill currency combobox
+
+            currencyComboBox.Items.Clear();
+
+            foreach (var item in currenciesAvailable)
+            {
+                currencyComboBox.Items.Add(item);
+            }
+
+        }
+
         public Form1()
         {
             InitializeComponent();
 
             Application.ApplicationExit += new EventHandler(Application_ApplicationExit);
+
+
+            fillCurrencies();
 
             this.listView1.ItemChecked += this.listView1_ItemChecked;
             this.CommandBox2.KeyDown += this.CmdBox_KeyDown;
@@ -101,7 +140,7 @@ namespace Limbo
 
             richTextBox2.ReadOnly = true;
             richTextBox2.BackColor = Color.FromArgb(249, 249, 249);
-            listView1.BackColor = Color.FromArgb(249,249,249);
+            listView1.BackColor = Color.FromArgb(249, 249, 249);
             listBox3.BackColor = Color.FromArgb(249, 249, 249);
             //listView1.Hide();
 
@@ -110,11 +149,13 @@ namespace Limbo
 
             xList.Add(0);
             yList.Add(0);
+
             data.Add(new ObservablePoint
             {
                 X = xList[counter],
                 Y = yList[counter]
             });
+
             ch.Series = new SeriesCollection
             {
                 new LiveCharts.Wpf.LineSeries
@@ -125,6 +166,7 @@ namespace Limbo
                     AreaLimit = 0
                 }
             };
+
             ch.AxisX.Add(new LiveCharts.Wpf.Axis
             {
                 /*Separator = new LiveCharts.Wpf.Separator
@@ -132,7 +174,9 @@ namespace Limbo
                     Step = 15
                 }*/
             });
+
             Func<double, string> formatFunc = (x) => string.Format("{0:0.000000}", x);
+
             ch.AxisY.Add(new LiveCharts.Wpf.Axis
             {
                 LabelFormatter = formatFunc
@@ -152,7 +196,7 @@ namespace Limbo
             tabPageLua.Controls.Add(richTextBox1);
 
             richTextBox1.TextChanged += this.richTextBox1_TextChanged;
-            
+
             richTextBox1.Text = Properties.Settings.Default.textCode;
 
         }
@@ -184,7 +228,7 @@ namespace Limbo
         }
         private void RegisterLua()
         {
-            
+
             lua.RegisterFunction("vault", this, new dvault(luaVault).Method);
             lua.RegisterFunction("tip", this, new dtip(luatip).Method);
             lua.RegisterFunction("print", this, new LogConsole(luaPrint).Method);
@@ -226,14 +270,14 @@ namespace Limbo
                 currencySelected = (string)lua["currency"];
                 target = (double)lua["target"];
                 TargetLabeL.Text = target.ToString("0.00") + "x";
-            } 
+            }
             catch (Exception e)
             {
                 ready = false;
                 bSta();
                 luaPrint("Please set 'nextbet = x' and 'target = x' variable on top of script.");
             }
-            
+
 
 
         }
@@ -241,7 +285,7 @@ namespace Limbo
         {
             running = false;
             button1.Enabled = true;
-            comboBox1.Enabled = true;
+            currencyComboBox.Enabled = true;
             button1.Text = "Start";
         }
 
@@ -260,7 +304,7 @@ namespace Limbo
             }
             else
             {
-                log.BackColor = Color.FromArgb(250,185,170);
+                log.BackColor = Color.FromArgb(250, 185, 170);
             }
         }
 
@@ -270,7 +314,7 @@ namespace Limbo
             profitLabel.Text = currentProfit.ToString("0.00000000");
             wagerLabel.Text = currentWager.ToString("0.00000000");
             wltLabel.Text = String.Format("{0} / {1} / {2}", wins.ToString(), losses.ToString(), (wins + losses).ToString());
-            currentStreakLabel.Text = String.Format("{0} / {1} / {2}", (winstreak > 0) ? winstreak.ToString() : (-losestreak).ToString(), highestStreak.Max().ToString(), lowestStreak.Min().ToString()); 
+            currentStreakLabel.Text = String.Format("{0} / {1} / {2}", (winstreak > 0) ? winstreak.ToString() : (-losestreak).ToString(), highestStreak.Max().ToString(), lowestStreak.Min().ToString());
             lowestProfitLabel.Text = lowestProfit.Min().ToString("0.00000000");
             highestProfitLabel.Text = highestProfit.Max().ToString("0.00000000");
             highestBetLabel.Text = highestBet.Max().ToString("0.00000000");
@@ -344,9 +388,9 @@ namespace Limbo
             });
         }
 
-        
 
-       
+
+
 
         private void LogButton_Click(object sender, EventArgs e)
         {
@@ -375,7 +419,7 @@ namespace Limbo
             {
                 Connect();
                 await Authorize();
-                
+
             }
             else
             {
@@ -383,11 +427,11 @@ namespace Limbo
             }
         }
 
-        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        private void currencyComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            currencySelected = curr[comboBox1.SelectedIndex].ToLower();
-            Properties.Settings.Default.indexCurrency = comboBox1.SelectedIndex;
-            string[] current = comboBox1.Text.Split(' ');
+            currencySelected = currenciesAvailable[currencyComboBox.SelectedIndex].ToLower();
+            Properties.Settings.Default.indexCurrency = currencyComboBox.SelectedIndex;
+            string[] current = currencyComboBox.Text.Split(' ');
             if (current.Length > 1)
             {
                 balanceLabel.Text = current[1] + " " + currencySelected;
@@ -407,7 +451,7 @@ namespace Limbo
                 ready = true;
                 RegisterLua();
                 await CheckBalance();
-                
+
                 try
                 {
                     UnSetVariables();
@@ -428,13 +472,13 @@ namespace Limbo
                 }
                 GetLuaVariables();
 
-                comboBox1.SelectedIndex = Array.FindIndex(curr, row => row == currencySelected.ToUpper());
+                currencyComboBox.SelectedIndex = Array.FindIndex(currenciesAvailable, row => row == currencySelected.ToUpper());
                 if (ready == true)
                 {
                     button1.Enabled = false;
                     running = true;
                     button1.Text = "Stop";
-                    comboBox1.Enabled = false;
+                    currencyComboBox.Enabled = false;
                     beginMs = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
                     StartBet();
                 }
@@ -443,7 +487,7 @@ namespace Limbo
                     bSta();
                 }
 
-                
+
             }
             else
             {
@@ -453,7 +497,7 @@ namespace Limbo
         }
         async Task StartBet()
         {
-            while(running == true)
+            while (running == true)
             {
                 if (beginMs == 0)
                 {
@@ -539,7 +583,7 @@ namespace Limbo
                                 if (_msg.payload.data.availableBalances.balance.currency == currencySelected.ToLower())
                                 {
                                     currentBal = _msg.payload.data.availableBalances.balance.amount;
-                                    
+
                                     try
                                     {
                                         lua["balance"] = currentBal;
@@ -553,11 +597,11 @@ namespace Limbo
                                         bSta();
                                     }
                                     balanceLabel.Text = String.Format("{0} {1}", currentBal.ToString("0.00000000"), currencySelected);
-                                    
+
                                 }
-                                
-                                var index = Array.FindIndex(curr, row => row.Contains(_msg.payload.data.availableBalances.balance.currency.ToUpper()));
-                                comboBox1.Items[index] = string.Format("{0} {1}", curr[index], _msg.payload.data.availableBalances.balance.amount.ToString("0.00000000"));
+
+                                var index = Array.FindIndex(currenciesAvailable, row => row.Contains(_msg.payload.data.availableBalances.balance.currency.ToUpper()));
+                                currencyComboBox.Items[index] = string.Format("{0} {1}", currenciesAvailable[index], _msg.payload.data.availableBalances.balance.amount.ToString("0.00000000"));
 
 
 
@@ -681,7 +725,7 @@ namespace Limbo
                         if (running == true)
                         {
                             await Task.Delay(2000);
-   
+
                         }
                         else
                         {
@@ -714,7 +758,7 @@ namespace Limbo
 
                         Log(response);
                         //CheckBalance();
-                        
+
                         decimal profitCurr = response.data.limboBet.payout - response.data.limboBet.amount;
                         currentProfit += response.data.limboBet.payout - response.data.limboBet.amount;
                         //profitLabel.Text = currentProfit.ToString("0.00000000");
@@ -723,7 +767,7 @@ namespace Limbo
 
                         last.target = response.data.limboBet.state.multiplierTarget;
                         last.result = response.data.limboBet.state.result;
-                        
+
 
                         highestStreak.Add(winstreak);
                         highestStreak = new List<int> { highestStreak.Max() };
@@ -767,7 +811,7 @@ namespace Limbo
                             yList.RemoveAt(0);
 
                         }
- 
+
                         try
                         {
                             SetLuaVariables(profitCurr);
@@ -839,12 +883,12 @@ namespace Limbo
                             }
                             if (true)
                             {
-                                for (int s = 0; s < curr.Length; s++)
+                                for (int s = 0; s < currenciesAvailable.Length; s++)
                                 {
-                                    if (response.data.user.balances[i].available.currency == curr[s].ToLower())
+                                    if (response.data.user.balances[i].available.currency == currenciesAvailable[s].ToLower())
                                     {
-                                        comboBox1.Items[s] = string.Format("{0} {1}", curr[s], response.data.user.balances[i].available.amount.ToString("0.00000000"));
-                                        
+                                        currencyComboBox.Items[s] = string.Format("{0} {1}", currenciesAvailable[s], response.data.user.balances[i].available.amount.ToString("0.00000000"));
+
                                         break;
                                     }
                                 }
@@ -1145,7 +1189,7 @@ namespace Limbo
                 //Debug.WriteLine(restResponse.Content);
                 ActiveData response = JsonConvert.DeserializeObject<ActiveData>(restResponse.Content);
                 //System.Diagnostics.Debug.WriteLine(restResponse.Content);
-                if (response.errors != null)
+                if (response == null || response.errors != null)
                 {
                     toolStripStatusLabel1.Text = "Unauthorized";
                 }
@@ -1166,11 +1210,11 @@ namespace Limbo
                             //currencySelect.Items.Clear();
                             if (true)
                             {
-                                for (int s = 0; s < curr.Length; s++)
+                                for (int s = 0; s < currenciesAvailable.Length; s++)
                                 {
-                                    if (response.data.user.balances[i].available.currency == curr[s].ToLower())
+                                    if (response.data.user.balances[i].available.currency == currenciesAvailable[s].ToLower())
                                     {
-                                        comboBox1.Items[s] = string.Format("{0} {1}", curr[s], response.data.user.balances[i].available.amount.ToString("0.00000000"));
+                                        currencyComboBox.Items[s] = string.Format("{0} {1}", currenciesAvailable[s], response.data.user.balances[i].available.amount.ToString("0.00000000"));
                                         //currencySelect.Items.Add(string.Format("{0} {1}", s, response.data.user.balances[i].available.amount.ToString("0.00000000")));
                                         break;
                                     }
@@ -1190,8 +1234,9 @@ namespace Limbo
 
         private void Form1_Load(object sender, EventArgs e)
         {
+
             textBox1.Text = Properties.Settings.Default.token;
-            comboBox1.SelectedIndex = Properties.Settings.Default.indexCurrency;
+            currencyComboBox.SelectedIndex = Properties.Settings.Default.indexCurrency;
             SiteComboBox2.SelectedIndex = Properties.Settings.Default.indexSite;
             ServerSeedBox.Text = Properties.Settings.Default.serverSeed;
             ClientSeedBox.Text = Properties.Settings.Default.clientSeed;
@@ -1199,13 +1244,13 @@ namespace Limbo
             NonceStopBox.Text = Properties.Settings.Default.nonceStop.ToString();
         }
 
-  
-        
+
+
         private void SimulateRun()
         {
-            while(sim == true)
+            while (sim == true)
             {
-                if(nonce > stopNonce || balanceSim < amount || target <= 1)
+                if (nonce > stopNonce || balanceSim < amount || target <= 1)
                 {
                     if (target <= 1)
                     {
@@ -1273,7 +1318,7 @@ namespace Limbo
                 highestBet.Add(amount);
                 highestBet = new List<decimal> { highestBet.Max() };
                 this.Invoke((MethodInvoker)delegate ()
-                {   
+                {
                     balanceLabel.Text = String.Format("{0}", balanceSim.ToString("0.00000000"));
                     profitLabel.Text = currentProfit.ToString("0.00000000");
                     wagerLabel.Text = currentWager.ToString("0.00000000");
@@ -1287,7 +1332,7 @@ namespace Limbo
                 //SetStatistics();
                 string box = String.Format("[{0}] {4}x  |  {1}   |  bet: {5}  |  profit:  {2}   [{3}]", nonce - 1, result.ToString("0.0000"), currentProfit.ToString("0.00000000"), winStatus, target.ToString("0.00"), amount.ToString("0.00000000"));
                 listBox3.Items.Insert(0, box);
-                if(listBox3.Items.Count > 200)
+                if (listBox3.Items.Count > 200)
                 {
                     listBox3.Items.RemoveAt(listBox3.Items.Count - 1);
                 }
@@ -1323,7 +1368,7 @@ namespace Limbo
                 amount = Lastbet;
                 currencySelected = (string)lua["currency"];
                 target = (double)lua["target"];
-                
+
             }
         }
         static decimal LimboResult(string serverSeed, string clientSeed, int nonce)
@@ -1354,7 +1399,7 @@ namespace Limbo
         }
 
         private void ServerSeedBox_TextChanged(object sender, EventArgs e)
-        {       
+        {
             serverSeed = ServerSeedBox.Text;
             Properties.Settings.Default.serverSeed = serverSeed;
         }
@@ -1392,7 +1437,7 @@ namespace Limbo
                 lua["target"] = null;
                 try
                 {
-                    
+
                     lua["profit"] = currentProfit;
                     lua["currentstreak"] = (winstreak > 0) ? winstreak : -losestreak;
                     lua["previousbet"] = Lastbet;
@@ -1416,7 +1461,7 @@ namespace Limbo
                     luaPrint(ex.Message);
                     sim = false;
                 }
-                
+
 
                 try
                 {
@@ -1426,13 +1471,13 @@ namespace Limbo
                     target = (double)lua["target"];
                     balanceSim = (decimal)(double)lua["balance"];
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     luaPrint("Please set 'balance = x' and 'target = x' and 'nextbet = x' variable on top of script.");
                     SimulateButton_Click_1(this, new EventArgs());
                     return;
                 }
-                
+
                 balanceLabel.Text = String.Format("{0}", balanceSim.ToString("0.00000000"));
                 Task.Run(() => SimulateRun());
             }
@@ -1456,7 +1501,7 @@ namespace Limbo
         }
         private void listBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
-            
+
         }
 
         private void ResetBoxSeed_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
