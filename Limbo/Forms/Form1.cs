@@ -115,11 +115,11 @@ namespace Limbo
         {
             // fill currency combobox
 
-            currencyComboBox.Items.Clear();
+            currencySelector.Items.Clear();
 
             foreach (var item in currenciesAvailable)
             {
-                currencyComboBox.Items.Add(item);
+                currencySelector.Items.Add(item);
             }
 
         }
@@ -285,7 +285,7 @@ namespace Limbo
         {
             running = false;
             button1.Enabled = true;
-            currencyComboBox.Enabled = true;
+            currencySelector.Enabled = true;
             button1.Text = "Start";
         }
 
@@ -413,25 +413,16 @@ namespace Limbo
 
         private async void textBox1_TextChanged(object sender, EventArgs e)
         {
-            token = textBox1.Text;
+            token = apiKeyInput.Text;
             Properties.Settings.Default.token = token;
-            if (token.Length == 96)
-            {
-                Connect();
-                await Authorize();
-
-            }
-            else
-            {
-                toolStripStatusLabel1.Text = "Unauthorized";
-            }
+        
         }
 
         private void currencyComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            currencySelected = currenciesAvailable[currencyComboBox.SelectedIndex].ToLower();
-            Properties.Settings.Default.indexCurrency = currencyComboBox.SelectedIndex;
-            string[] current = currencyComboBox.Text.Split(' ');
+            currencySelected = currenciesAvailable[currencySelector.SelectedIndex].ToLower();
+            Properties.Settings.Default.indexCurrency = currencySelector.SelectedIndex;
+            string[] current = currencySelector.Text.Split(' ');
             if (current.Length > 1)
             {
                 balanceLabel.Text = current[1] + " " + currencySelected;
@@ -440,8 +431,8 @@ namespace Limbo
 
         private void SiteComboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
-            StakeSite = SiteComboBox2.Text.ToLower();
-            Properties.Settings.Default.indexSite = SiteComboBox2.SelectedIndex;
+            StakeSite = mirrorSiteSelector.Text.ToLower();
+            Properties.Settings.Default.indexSite = mirrorSiteSelector.SelectedIndex;
         }
 
         private async void button1_Click(object sender, EventArgs e)
@@ -472,13 +463,13 @@ namespace Limbo
                 }
                 GetLuaVariables();
 
-                currencyComboBox.SelectedIndex = Array.FindIndex(currenciesAvailable, row => row == currencySelected.ToUpper());
+                currencySelector.SelectedIndex = Array.FindIndex(currenciesAvailable, row => row == currencySelected.ToUpper());
                 if (ready == true)
                 {
                     button1.Enabled = false;
                     running = true;
                     button1.Text = "Stop";
-                    currencyComboBox.Enabled = false;
+                    currencySelector.Enabled = false;
                     beginMs = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
                     StartBet();
                 }
@@ -601,7 +592,7 @@ namespace Limbo
                                 }
 
                                 var index = Array.FindIndex(currenciesAvailable, row => row.Contains(_msg.payload.data.availableBalances.balance.currency.ToUpper()));
-                                currencyComboBox.Items[index] = string.Format("{0} {1}", currenciesAvailable[index], _msg.payload.data.availableBalances.balance.amount.ToString("0.00000000"));
+                                currencySelector.Items[index] = string.Format("{0} {1}", currenciesAvailable[index], _msg.payload.data.availableBalances.balance.amount.ToString("0.00000000"));
 
 
 
@@ -887,7 +878,7 @@ namespace Limbo
                                 {
                                     if (response.data.user.balances[i].available.currency == currenciesAvailable[s].ToLower())
                                     {
-                                        currencyComboBox.Items[s] = string.Format("{0} {1}", currenciesAvailable[s], response.data.user.balances[i].available.amount.ToString("0.00000000"));
+                                        currencySelector.Items[s] = string.Format("{0} {1}", currenciesAvailable[s], response.data.user.balances[i].available.amount.ToString("0.00000000"));
 
                                         break;
                                     }
@@ -914,17 +905,17 @@ namespace Limbo
         }
         private void clearLinkbtn_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            textBox1.Clear();
-            textBox1.Enabled = true;
+            apiKeyInput.Clear();
+            apiKeyInput.Enabled = true;
             token = "";
             toolStripStatusLabel1.Text = "Unauthorized";
         }
 
         private async void CheckBtn_Click(object sender, EventArgs e)
         {
-            CheckBtn.Enabled = false;
+            btnCheckBalance.Enabled = false;
             await CheckBalance();
-            CheckBtn.Enabled = true;
+            btnCheckBalance.Enabled = true;
         }
 
         public string RandomString(int length)
@@ -1198,7 +1189,7 @@ namespace Limbo
                     if (response.data != null)
                     {
                         toolStripStatusLabel1.Text = String.Format("Authorized.");
-                        textBox1.Enabled = false;
+                        apiKeyInput.Enabled = false;
                         for (var i = 0; i < response.data.user.balances.Count; i++)
                         {
                             if (response.data.user.balances[i].available.currency == currencySelected.ToLower())
@@ -1214,7 +1205,7 @@ namespace Limbo
                                 {
                                     if (response.data.user.balances[i].available.currency == currenciesAvailable[s].ToLower())
                                     {
-                                        currencyComboBox.Items[s] = string.Format("{0} {1}", currenciesAvailable[s], response.data.user.balances[i].available.amount.ToString("0.00000000"));
+                                        currencySelector.Items[s] = string.Format("{0} {1}", currenciesAvailable[s], response.data.user.balances[i].available.amount.ToString("0.00000000"));
                                         //currencySelect.Items.Add(string.Format("{0} {1}", s, response.data.user.balances[i].available.amount.ToString("0.00000000")));
                                         break;
                                     }
@@ -1235,9 +1226,9 @@ namespace Limbo
         private void Form1_Load(object sender, EventArgs e)
         {
 
-            textBox1.Text = Properties.Settings.Default.token;
-            currencyComboBox.SelectedIndex = Properties.Settings.Default.indexCurrency;
-            SiteComboBox2.SelectedIndex = Properties.Settings.Default.indexSite;
+            apiKeyInput.Text = Properties.Settings.Default.token;
+            currencySelector.SelectedIndex = Properties.Settings.Default.indexCurrency;
+            mirrorSiteSelector.SelectedIndex = Properties.Settings.Default.indexSite;
             ServerSeedBox.Text = Properties.Settings.Default.serverSeed;
             ClientSeedBox.Text = Properties.Settings.Default.clientSeed;
             NonceBox.Text = Properties.Settings.Default.nonce.ToString();
@@ -1544,6 +1535,21 @@ namespace Limbo
 
             });
         }
+
+        private async void btnLoginLogout_Click(object sender, EventArgs e)
+        {
+            if (token.Length == 96)
+            {
+                Connect();
+                await Authorize();
+            }
+            else
+            {
+                toolStripStatusLabel1.Text = "Unauthorized";
+            }
+        }
+
+
     }
     public class lastbet
     {
