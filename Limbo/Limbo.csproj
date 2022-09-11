@@ -222,11 +222,5 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\GamblingTools\GamblingTools.sdk\GamblingTools.Sdk.csproj">
-      <Project>{02204352-cc6a-4be0-8aba-d594f33c5b1f}</Project>
-      <Name>GamblingTools.Sdk</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -52,8 +52,8 @@
             this.profitLabel = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.btnLoginLogout = new System.Windows.Forms.Button();
             this.btnCheckBalance = new System.Windows.Forms.Button();
-            this.clearLinkbtn = new System.Windows.Forms.LinkLabel();
             this.label14 = new System.Windows.Forms.Label();
             this.mirrorSiteSelector = new System.Windows.Forms.ComboBox();
             this.label13 = new System.Windows.Forms.Label();
@@ -95,7 +95,6 @@
             this.ServerSeedBox = new System.Windows.Forms.TextBox();
             this.SimulateButton = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
-            this.btnLoginLogout = new System.Windows.Forms.Button();
             this.statusStrip1.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -160,7 +159,7 @@
             this.tabPage1.Controls.Add(this.label7);
             this.tabPage1.Location = new System.Drawing.Point(4, 22);
             this.tabPage1.Name = "tabPage1";
-            this.tabPage1.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
             this.tabPage1.Size = new System.Drawing.Size(376, 107);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Statistics";
@@ -367,11 +366,21 @@
             this.tabPage2.Controls.Add(this.apiKeyInput);
             this.tabPage2.Location = new System.Drawing.Point(4, 22);
             this.tabPage2.Name = "tabPage2";
-            this.tabPage2.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
             this.tabPage2.Size = new System.Drawing.Size(376, 107);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Settings";
             this.tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // btnLoginLogout
+            // 
+            this.btnLoginLogout.Location = new System.Drawing.Point(295, 33);
+            this.btnLoginLogout.Name = "btnLoginLogout";
+            this.btnLoginLogout.Size = new System.Drawing.Size(75, 21);
+            this.btnLoginLogout.TabIndex = 8;
+            this.btnLoginLogout.Text = "Login";
+            this.btnLoginLogout.UseVisualStyleBackColor = true;
+            this.btnLoginLogout.Click += new System.EventHandler(this.btnLoginLogout_Click);
             // 
             // btnCheckBalance
             // 
@@ -382,18 +391,6 @@
             this.btnCheckBalance.Text = "Check";
             this.btnCheckBalance.UseVisualStyleBackColor = true;
             this.btnCheckBalance.Click += new System.EventHandler(this.CheckBtn_Click);
-            // 
-            // clearLinkbtn
-            // 
-            this.clearLinkbtn.AutoSize = true;
-            this.clearLinkbtn.LinkColor = System.Drawing.Color.Blue;
-            this.clearLinkbtn.Location = new System.Drawing.Point(325, 205);
-            this.clearLinkbtn.Name = "clearLinkbtn";
-            this.clearLinkbtn.Size = new System.Drawing.Size(31, 13);
-            this.clearLinkbtn.TabIndex = 6;
-            this.clearLinkbtn.TabStop = true;
-            this.clearLinkbtn.Text = "Clear";
-            this.clearLinkbtn.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.clearLinkbtn_LinkClicked);
             // 
             // label14
             // 
@@ -539,7 +536,7 @@
             // 
             this.tabPageLua.Location = new System.Drawing.Point(4, 22);
             this.tabPageLua.Name = "tabPageLua";
-            this.tabPageLua.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPageLua.Padding = new System.Windows.Forms.Padding(3);
             this.tabPageLua.Size = new System.Drawing.Size(393, 308);
             this.tabPageLua.TabIndex = 0;
             this.tabPageLua.Text = "Lua";
@@ -552,7 +549,7 @@
             this.tabConsole.Controls.Add(this.richTextBox2);
             this.tabConsole.Location = new System.Drawing.Point(4, 22);
             this.tabConsole.Name = "tabConsole";
-            this.tabConsole.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabConsole.Padding = new System.Windows.Forms.Padding(3);
             this.tabConsole.Size = new System.Drawing.Size(393, 308);
             this.tabConsole.TabIndex = 1;
             this.tabConsole.Text = "Console";
@@ -831,16 +828,6 @@
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
-            // btnLoginLogout
-            // 
-            this.btnLoginLogout.Location = new System.Drawing.Point(295, 33);
-            this.btnLoginLogout.Name = "btnLoginLogout";
-            this.btnLoginLogout.Size = new System.Drawing.Size(75, 21);
-            this.btnLoginLogout.TabIndex = 8;
-            this.btnLoginLogout.Text = "Login";
-            this.btnLoginLogout.UseVisualStyleBackColor = true;
-            this.btnLoginLogout.Click += new System.EventHandler(this.btnLoginLogout_Click);
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -848,7 +835,6 @@
             this.ClientSize = new System.Drawing.Size(784, 361);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.tabControl2);
-            this.Controls.Add(this.clearLinkbtn);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.LogButton);
             this.Controls.Add(this.TargetLabeL);
@@ -927,7 +913,6 @@
         private System.Windows.Forms.ComboBox currencySelector;
         private System.Windows.Forms.Label label12;
         private System.Windows.Forms.TextBox apiKeyInput;
-        private System.Windows.Forms.LinkLabel clearLinkbtn;
         private System.Windows.Forms.Button btnCheckBalance;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.TextBox CommandBox2;
