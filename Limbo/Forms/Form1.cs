@@ -13,6 +13,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Net;
 using System.Security.Authentication;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,6 +24,12 @@ namespace Limbo
 {
     public partial class Form1 : Form
     {
+
+
+        public CookieContainer cc;
+        RestClient SharedRestClient;
+
+
         private WebSocket chat_socket { get; set; }
         private FastColoredTextBox richTextBox1;
 
@@ -115,11 +122,11 @@ namespace Limbo
         {
             // fill currency combobox
 
-            currencyComboBox.Items.Clear();
+            currencySelector.Items.Clear();
 
             foreach (var item in currenciesAvailable)
             {
-                currencyComboBox.Items.Add(item);
+                currencySelector.Items.Add(item);
             }
 
         }
@@ -195,11 +202,70 @@ namespace Limbo
             richTextBox1.BackColor = Color.FromArgb(249, 249, 249);
             tabPageLua.Controls.Add(richTextBox1);
 
+
             richTextBox1.TextChanged += this.richTextBox1_TextChanged;
 
-            richTextBox1.Text = Properties.Settings.Default.textCode;
+            //richTextBox1.Text = Properties.Settings.Default.textCode;
+
+            richTextBox1.Text = @"nextbet  = 0.00000000 --sets your first bet.
+target = 2 -- set target
+
+function dobet()
+    if (win) then
+        print(lastBet.result) 
+    end
+end";
 
         }
+
+
+        /// <summary>
+        /// CreateOrUseDefaultRestClient
+        /// </summary>
+        /// <param name="dispose"></param>
+        private void CreateOrUseDefaultRestClient(bool dispose = false)
+        {
+            if (dispose == true)
+            {
+                SharedRestClient = null;
+                cc = null;
+            }
+
+            if (SharedRestClient != null)
+            {
+                return;
+            }
+
+            var mainurl = "https://api." + StakeSite + "/graphql";
+
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
+            this.cc = new CookieContainer();
+
+            SharedRestClient = new RestClient();
+            SharedRestClient.BaseUrl = new Uri(mainurl);
+            SharedRestClient.CookieContainer = this.cc;
+            SharedRestClient.UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36";
+        }
+
+        /// <summary>
+        /// CreateDefaultRestRequest
+        /// </summary>
+        /// <param name="apiKey"></param>
+        /// <returns></returns>
+        private RestRequest CreateDefaultRestRequest(string apiKey)
+        {
+            RestRequest restRequest = new RestRequest(Method.POST);
+            restRequest.AddHeader("authorization", string.Format("Bearer {0}", apiKey));
+            restRequest.AddHeader("x-access-token", apiKey);
+            restRequest.AddHeader("Content-type", "application/json");
+            return restRequest;
+        }
+
+
+
+
+
         private void listBox3_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Control == true && e.KeyCode == Keys.C)
@@ -285,7 +351,7 @@ namespace Limbo
         {
             running = false;
             button1.Enabled = true;
-            currencyComboBox.Enabled = true;
+            currencySelector.Enabled = true;
             button1.Text = "Start";
         }
 
@@ -413,25 +479,16 @@ namespace Limbo
 
         private async void textBox1_TextChanged(object sender, EventArgs e)
         {
-            token = textBox1.Text;
+            token = apiKeyInput.Text;
             Properties.Settings.Default.token = token;
-            if (token.Length == 96)
-            {
-                Connect();
-                await Authorize();
 
-            }
-            else
-            {
-                toolStripStatusLabel1.Text = "Unauthorized";
-            }
         }
 
         private void currencyComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            currencySelected = currenciesAvailable[currencyComboBox.SelectedIndex].ToLower();
-            Properties.Settings.Default.indexCurrency = currencyComboBox.SelectedIndex;
-            string[] current = currencyComboBox.Text.Split(' ');
+            currencySelected = currenciesAvailable[currencySelector.SelectedIndex].ToLower();
+            Properties.Settings.Default.indexCurrency = currencySelector.SelectedIndex;
+            string[] current = currencySelector.Text.Split(' ');
             if (current.Length > 1)
             {
                 balanceLabel.Text = current[1] + " " + currencySelected;
@@ -440,8 +497,8 @@ namespace Limbo
 
         private void SiteComboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
-            StakeSite = SiteComboBox2.Text.ToLower();
-            Properties.Settings.Default.indexSite = SiteComboBox2.SelectedIndex;
+            StakeSite = mirrorSiteSelector.Text.ToLower();
+            Properties.Settings.Default.indexSite = mirrorSiteSelector.SelectedIndex;
         }
 
         private async void button1_Click(object sender, EventArgs e)
@@ -472,13 +529,13 @@ namespace Limbo
                 }
                 GetLuaVariables();
 
-                currencyComboBox.SelectedIndex = Array.FindIndex(currenciesAvailable, row => row == currencySelected.ToUpper());
+                currencySelector.SelectedIndex = Array.FindIndex(currenciesAvailable, row => row == currencySelected.ToUpper());
                 if (ready == true)
                 {
                     button1.Enabled = false;
                     running = true;
                     button1.Text = "Stop";
-                    currencyComboBox.Enabled = false;
+                    currencySelector.Enabled = false;
                     beginMs = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
                     StartBet();
                 }
@@ -601,7 +658,7 @@ namespace Limbo
                                 }
 
                                 var index = Array.FindIndex(currenciesAvailable, row => row.Contains(_msg.payload.data.availableBalances.balance.currency.ToUpper()));
-                                currencyComboBox.Items[index] = string.Format("{0} {1}", currenciesAvailable[index], _msg.payload.data.availableBalances.balance.amount.ToString("0.00000000"));
+                                currencySelector.Items[index] = string.Format("{0} {1}", currenciesAvailable[index], _msg.payload.data.availableBalances.balance.amount.ToString("0.00000000"));
 
 
 
@@ -688,29 +745,41 @@ namespace Limbo
             {
                 if (running)
                 {
-                    var mainurl = "https://api." + StakeSite + "/graphql";
-                    var request = new RestRequest(Method.POST);
-                    var client = new RestClient(mainurl);
-                    BetQuery payload = new BetQuery();
-                    payload.variables = new BetClass()
-                    {
-                        currency = currencySelected,
-                        amount = amount,
-                        multiplierTarget = target,
-                        identifier = RandomString(21)
 
+                    //var mainurl = "https://api." + StakeSite + "/graphql";
+                   // var request = new RestRequest(Method.POST);
+                    //var client = new RestClient(mainurl);
+
+                    BetQuery payload = new BetQuery
+                    {
+                        variables = new BetClass()
+                        {
+                            currency = currencySelected,
+                            amount = amount,
+                            multiplierTarget = target,
+                            identifier = RandomString(21)
+
+                        },
+                        query = "mutation LimboBet($amount: Float!, $multiplierTarget: Float!, $currency: CurrencyEnum!, $identifier: String!) {\n limboBet(\n amount: $amount\n currency: $currency\n multiplierTarget: $multiplierTarget\n identifier: $identifier\n  ) {\n...CasinoBet\n state {\n...CasinoGameLimbo\n    }\n  }\n}\n\nfragment CasinoBet on CasinoBet {\n id\n active\n payoutMultiplier\n amountMultiplier\n amount\n payout\n updatedAt\n currency\n game\n user {\n id\n name\n  }\n}\n\nfragment CasinoGameLimbo on CasinoGameLimbo {\n result\n multiplierTarget\n}\n"
                     };
 
-                    payload.query = "mutation LimboBet($amount: Float!, $multiplierTarget: Float!, $currency: CurrencyEnum!, $identifier: String!) {\n limboBet(\n amount: $amount\n currency: $currency\n multiplierTarget: $multiplierTarget\n identifier: $identifier\n  ) {\n...CasinoBet\n state {\n...CasinoGameLimbo\n    }\n  }\n}\n\nfragment CasinoBet on CasinoBet {\n id\n active\n payoutMultiplier\n amountMultiplier\n amount\n payout\n updatedAt\n currency\n game\n user {\n id\n name\n  }\n}\n\nfragment CasinoGameLimbo on CasinoGameLimbo {\n result\n multiplierTarget\n}\n";
+                    //request.AddHeader("Content-Type", "application/json");
+                   // request.AddHeader("x-access-token", token);
 
-                    request.AddHeader("Content-Type", "application/json");
-                    request.AddHeader("x-access-token", token);
-
-                    request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
+                    //request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
 
 
-                    var restResponse =
-                        await client.ExecuteAsync(request);
+                   // var restResponse =
+                    //    await client.ExecuteAsync(request);
+
+
+                    CreateOrUseDefaultRestClient();
+
+                    var request = CreateDefaultRestRequest(token);
+
+                    request.AddJsonBody(payload);
+
+                    var restResponse = await SharedRestClient.ExecuteAsync(request);
 
 
                     button1.Enabled = true;
@@ -843,22 +912,28 @@ namespace Limbo
         {
             try
             {
-                var mainurl = "https://api." + StakeSite + "/graphql";
-                var request = new RestRequest(Method.POST);
-                var client = new RestClient(mainurl);
-                BetQuery payload = new BetQuery();
-                payload.operationName = "UserBalances";
-                payload.query = "query UserBalances {\n  user {\n    id\n    balances {\n      available {\n        amount\n        currency\n        __typename\n      }\n      vault {\n        amount\n        currency\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n";
 
-                request.AddHeader("Content-Type", "application/json");
-                request.AddHeader("x-access-token", token);
+                //var mainurl = "https://api." + StakeSite + "/graphql";
+                //var request = new RestRequest(Method.POST);
+                //var client = new RestClient(mainurl);
 
-                request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
+                BetQuery payload = new BetQuery
+                {
+                    operationName = "UserBalances",
+                    query = "query UserBalances {\n  user {\n    id\n    balances {\n      available {\n        amount\n        currency\n        __typename\n      }\n      vault {\n        amount\n        currency\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
+                };
 
+                //request.AddHeader("Content-Type", "application/json");
+                //request.AddHeader("x-access-token", token);
+                //request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
 
+                CreateOrUseDefaultRestClient();
 
-                var restResponse =
-                    await client.ExecuteAsync(request);
+                var request = CreateDefaultRestRequest(token);
+
+                request.AddJsonBody(payload);
+
+                var restResponse = await SharedRestClient.ExecuteAsync(request);
 
 
                 //Debug.WriteLine(restResponse.Content);
@@ -887,7 +962,7 @@ namespace Limbo
                                 {
                                     if (response.data.user.balances[i].available.currency == currenciesAvailable[s].ToLower())
                                     {
-                                        currencyComboBox.Items[s] = string.Format("{0} {1}", currenciesAvailable[s], response.data.user.balances[i].available.amount.ToString("0.00000000"));
+                                        currencySelector.Items[s] = string.Format("{0} {1}", currenciesAvailable[s], response.data.user.balances[i].available.amount.ToString("0.00000000"));
 
                                         break;
                                     }
@@ -914,17 +989,17 @@ namespace Limbo
         }
         private void clearLinkbtn_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            textBox1.Clear();
-            textBox1.Enabled = true;
+            apiKeyInput.Clear();
+            apiKeyInput.Enabled = true;
             token = "";
             toolStripStatusLabel1.Text = "Unauthorized";
         }
 
         private async void CheckBtn_Click(object sender, EventArgs e)
         {
-            CheckBtn.Enabled = false;
+            btnCheckBalance.Enabled = false;
             await CheckBalance();
-            CheckBtn.Enabled = true;
+            btnCheckBalance.Enabled = true;
         }
 
         public string RandomString(int length)
@@ -1024,26 +1099,39 @@ namespace Limbo
         {
             try
             {
-                var mainurl = "https://api." + StakeSite + "/graphql";
-                var request = new RestRequest(Method.POST);
-                var client = new RestClient(mainurl);
-                BetQuery payload = new BetQuery();
-                payload.operationName = "CreateVaultDeposit";
-                payload.variables = new BetClass()
-                {
-                    currency = currencySelected.ToLower(),
-                    amount = sentamount
-                };
-                payload.query = "mutation CreateVaultDeposit($currency: CurrencyEnum!, $amount: Float!) {\n  createVaultDeposit(currency: $currency, amount: $amount) {\n    id\n    amount\n    currency\n    user {\n      id\n      balances {\n        available {\n          amount\n          currency\n          __typename\n        }\n        vault {\n          amount\n          currency\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n";
-                request.AddHeader("Content-Type", "application/json");
-                request.AddHeader("x-access-token", token);
+                //var mainurl = "https://api." + StakeSite + "/graphql";
+                //var request = new RestRequest(Method.POST);
+                //var client = new RestClient(mainurl);
 
-                request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
+                BetQuery payload = new BetQuery
+                {
+                    operationName = "CreateVaultDeposit",
+                    variables = new BetClass()
+                    {
+                        currency = currencySelected.ToLower(),
+                        amount = sentamount
+                    },
+                    query = "mutation CreateVaultDeposit($currency: CurrencyEnum!, $amount: Float!) {\n  createVaultDeposit(currency: $currency, amount: $amount) {\n    id\n    amount\n    currency\n    user {\n      id\n      balances {\n        available {\n          amount\n          currency\n          __typename\n        }\n        vault {\n          amount\n          currency\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
+                };
+
+                //request.AddHeader("Content-Type", "application/json");
+                //request.AddHeader("x-access-token", token);
+
+                //request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
                 //request.AddJsonBody(payload);
                 //IRestResponse response = client.Execute(request);
 
-                var restResponse =
-                    await client.ExecuteAsync(request);
+                //var restResponse =
+                //    await client.ExecuteAsync(request);
+
+
+                CreateOrUseDefaultRestClient();
+
+                var request = CreateDefaultRestRequest(token);
+
+                request.AddJsonBody(payload);
+
+                var restResponse = await SharedRestClient.ExecuteAsync(request);
 
                 // Will output the HTML contents of the requested page
                 //Debug.WriteLine(restResponse.Content);
@@ -1072,25 +1160,38 @@ namespace Limbo
         {
             try
             {
-                var mainurl = "https://api." + StakeSite + "/graphql";
-                var request = new RestRequest(Method.POST);
-                var client = new RestClient(mainurl);
-                BetQuery payload = new BetQuery();
-                payload.operationName = "RotateSeedPair";
-                payload.variables = new BetClass()
-                {
-                    seed = RandomString(10)
-                };
-                payload.query = "mutation RotateSeedPair($seed: String!) {\n  rotateSeedPair(seed: $seed) {\n    clientSeed {\n      user {\n        id\n        activeClientSeed {\n          id\n          seed\n          __typename\n        }\n        activeServerSeed {\n          id\n          nonce\n          seedHash\n          nextSeedHash\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n";
-                request.AddHeader("Content-Type", "application/json");
-                request.AddHeader("x-access-token", token);
+                // var mainurl = "https://api." + StakeSite + "/graphql";
+                // var request = new RestRequest(Method.POST);
+                // var client = new RestClient(mainurl);
 
-                request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
+                BetQuery payload = new BetQuery
+                {
+                    operationName = "RotateSeedPair",
+                    variables = new BetClass()
+                    {
+                        seed = RandomString(10)
+                    },
+                    query = "mutation RotateSeedPair($seed: String!) {\n  rotateSeedPair(seed: $seed) {\n    clientSeed {\n      user {\n        id\n        activeClientSeed {\n          id\n          seed\n          __typename\n        }\n        activeServerSeed {\n          id\n          nonce\n          seedHash\n          nextSeedHash\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
+                };
+
+                //  request.AddHeader("Content-Type", "application/json");
+                //  request.AddHeader("x-access-token", token);
+
+                // request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
                 //request.AddJsonBody(payload);
                 //IRestResponse response = client.Execute(request);
 
-                var restResponse =
-                    await client.ExecuteAsync(request);
+                //  var restResponse =
+                //      await client.ExecuteAsync(request);
+
+
+                CreateOrUseDefaultRestClient();
+
+                var request = CreateDefaultRestRequest(token);
+
+                request.AddJsonBody(payload);
+
+                var restResponse = await SharedRestClient.ExecuteAsync(request);
 
                 // Will output the HTML contents of the requested page
                 //Debug.WriteLine(restResponse.Content);
@@ -1120,25 +1221,38 @@ namespace Limbo
         {
             try
             {
-                var mainurl = "https://api." + StakeSite + "/graphql";
-                var request = new RestRequest(Method.POST);
-                var client = new RestClient(mainurl);
-                BetQuery payload = new BetQuery();
-                payload.operationName = "RotateSeedPair";
-                payload.variables = new BetClass()
-                {
-                    seed = RandomString(10)
-                };
-                payload.query = "mutation RotateSeedPair($seed: String!) {\n  rotateSeedPair(seed: $seed) {\n    clientSeed {\n      user {\n        id\n        activeClientSeed {\n          id\n          seed\n          __typename\n        }\n        activeServerSeed {\n          id\n          nonce\n          seedHash\n          nextSeedHash\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n";
-                request.AddHeader("Content-Type", "application/json");
-                request.AddHeader("x-access-token", token);
+                // var mainurl = "https://api." + StakeSite + "/graphql";
+                // var request = new RestRequest(Method.POST);
+                // var client = new RestClient(mainurl);
 
-                request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
+                BetQuery payload = new BetQuery
+                {
+                    operationName = "RotateSeedPair",
+                    variables = new BetClass()
+                    {
+                        seed = RandomString(10)
+                    },
+                    query = "mutation RotateSeedPair($seed: String!) {\n  rotateSeedPair(seed: $seed) {\n    clientSeed {\n      user {\n        id\n        activeClientSeed {\n          id\n          seed\n          __typename\n        }\n        activeServerSeed {\n          id\n          nonce\n          seedHash\n          nextSeedHash\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
+                };
+
+                // request.AddHeader("Content-Type", "application/json");
+                // request.AddHeader("x-access-token", token);
+
+                // request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
                 //request.AddJsonBody(payload);
                 //IRestResponse response = client.Execute(request);
 
-                var restResponse =
-                    await client.ExecuteAsync(request);
+                // var restResponse =
+                //     await client.ExecuteAsync(request);
+
+                CreateOrUseDefaultRestClient();
+
+                var request = CreateDefaultRestRequest(token);
+
+                request.AddJsonBody(payload);
+
+                var restResponse = await SharedRestClient.ExecuteAsync(request);
+
 
                 // Will output the HTML contents of the requested page
                 //Debug.WriteLine(restResponse.Content);
@@ -1168,22 +1282,33 @@ namespace Limbo
         {
             try
             {
-                var mainurl = "https://api." + StakeSite + "/graphql";
-                var request = new RestRequest(Method.POST);
-                var client = new RestClient(mainurl);
-                BetQuery payload = new BetQuery();
-                payload.operationName = "initialUserRequest";
-                payload.variables = new BetClass() { };
-                payload.query = "query initialUserRequest {\n  user {\n    ...UserAuth\n    __typename\n  }\n}\n\nfragment UserAuth on User {\n  id\n  name\n  email\n  hasPhoneNumberVerified\n  hasEmailVerified\n  hasPassword\n  intercomHash\n  createdAt\n  hasTfaEnabled\n  mixpanelId\n  hasOauth\n  isKycBasicRequired\n  isKycExtendedRequired\n  isKycFullRequired\n  kycBasic {\n    id\n    status\n    __typename\n  }\n  kycExtended {\n    id\n    status\n    __typename\n  }\n  kycFull {\n    id\n    status\n    __typename\n  }\n  flags {\n    flag\n    __typename\n  }\n  roles {\n    name\n    __typename\n  }\n  balances {\n    ...UserBalanceFragment\n    __typename\n  }\n  activeClientSeed {\n    id\n    seed\n    __typename\n  }\n  previousServerSeed {\n    id\n    seed\n    __typename\n  }\n  activeServerSeed {\n    id\n    seedHash\n    nextSeedHash\n    nonce\n    blocked\n    __typename\n  }\n  __typename\n}\n\nfragment UserBalanceFragment on UserBalance {\n  available {\n    amount\n    currency\n    __typename\n  }\n  vault {\n    amount\n    currency\n    __typename\n  }\n  __typename\n}\n";
-                request.AddHeader("Content-Type", "application/json");
-                request.AddHeader("x-access-token", token);
+                //var mainurl = "https://api." + StakeSite + "/graphql";
+                //var request = new RestRequest(Method.POST);
+                //var client = new RestClient(mainurl);
 
-                request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
+                BetQuery payload = new BetQuery
+                {
+                    operationName = "initialUserRequest",
+                    variables = new BetClass() { },
+                    query = "query initialUserRequest {\n  user {\n    ...UserAuth\n    __typename\n  }\n}\n\nfragment UserAuth on User {\n  id\n  name\n  email\n  hasPhoneNumberVerified\n  hasEmailVerified\n  hasPassword\n  intercomHash\n  createdAt\n  hasTfaEnabled\n  mixpanelId\n  hasOauth\n  isKycBasicRequired\n  isKycExtendedRequired\n  isKycFullRequired\n  kycBasic {\n    id\n    status\n    __typename\n  }\n  kycExtended {\n    id\n    status\n    __typename\n  }\n  kycFull {\n    id\n    status\n    __typename\n  }\n  flags {\n    flag\n    __typename\n  }\n  roles {\n    name\n    __typename\n  }\n  balances {\n    ...UserBalanceFragment\n    __typename\n  }\n  activeClientSeed {\n    id\n    seed\n    __typename\n  }\n  previousServerSeed {\n    id\n    seed\n    __typename\n  }\n  activeServerSeed {\n    id\n    seedHash\n    nextSeedHash\n    nonce\n    blocked\n    __typename\n  }\n  __typename\n}\n\nfragment UserBalanceFragment on UserBalance {\n  available {\n    amount\n    currency\n    __typename\n  }\n  vault {\n    amount\n    currency\n    __typename\n  }\n  __typename\n}\n"
+                };
+
+                //request.AddHeader("Content-Type", "application/json");
+                //request.AddHeader("x-access-token", token);
+                //request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
                 //request.AddJsonBody(payload);
                 //IRestResponse response = client.Execute(request);
+                //var restResponse =
+                //    await client.ExecuteAsync(request);
 
-                var restResponse =
-                    await client.ExecuteAsync(request);
+
+                CreateOrUseDefaultRestClient(true);
+
+                var request = CreateDefaultRestRequest(token);
+
+                request.AddJsonBody(payload);
+
+                var restResponse = await SharedRestClient.ExecuteAsync(request);
 
                 // Will output the HTML contents of the requested page
                 //Debug.WriteLine(restResponse.Content);
@@ -1192,13 +1317,15 @@ namespace Limbo
                 if (response == null || response.errors != null)
                 {
                     toolStripStatusLabel1.Text = "Unauthorized";
+                    is_connected = false;
                 }
                 else
                 {
                     if (response.data != null)
                     {
+                        is_connected = true;
                         toolStripStatusLabel1.Text = String.Format("Authorized.");
-                        textBox1.Enabled = false;
+                        apiKeyInput.Enabled = false;
                         for (var i = 0; i < response.data.user.balances.Count; i++)
                         {
                             if (response.data.user.balances[i].available.currency == currencySelected.ToLower())
@@ -1214,7 +1341,7 @@ namespace Limbo
                                 {
                                     if (response.data.user.balances[i].available.currency == currenciesAvailable[s].ToLower())
                                     {
-                                        currencyComboBox.Items[s] = string.Format("{0} {1}", currenciesAvailable[s], response.data.user.balances[i].available.amount.ToString("0.00000000"));
+                                        currencySelector.Items[s] = string.Format("{0} {1}", currenciesAvailable[s], response.data.user.balances[i].available.amount.ToString("0.00000000"));
                                         //currencySelect.Items.Add(string.Format("{0} {1}", s, response.data.user.balances[i].available.amount.ToString("0.00000000")));
                                         break;
                                     }
@@ -1235,9 +1362,9 @@ namespace Limbo
         private void Form1_Load(object sender, EventArgs e)
         {
 
-            textBox1.Text = Properties.Settings.Default.token;
-            currencyComboBox.SelectedIndex = Properties.Settings.Default.indexCurrency;
-            SiteComboBox2.SelectedIndex = Properties.Settings.Default.indexSite;
+            apiKeyInput.Text = Properties.Settings.Default.token;
+            currencySelector.SelectedIndex = Properties.Settings.Default.indexCurrency;
+            mirrorSiteSelector.SelectedIndex = Properties.Settings.Default.indexSite;
             ServerSeedBox.Text = Properties.Settings.Default.serverSeed;
             ClientSeedBox.Text = Properties.Settings.Default.clientSeed;
             NonceBox.Text = Properties.Settings.Default.nonce.ToString();
@@ -1544,6 +1671,37 @@ namespace Limbo
 
             });
         }
+
+        private async void btnLoginLogout_Click(object sender, EventArgs e)
+        {
+
+            if ((sender as Button).Text== "Logout")
+            {
+                clearLinkbtn_LinkClicked(null, null);
+                return;
+            }
+
+            if (token.Length == 96)
+            {
+                await Authorize();
+            }
+            else
+            {
+                toolStripStatusLabel1.Text = "Unauthorized";
+            }
+
+            if (is_connected)
+            {
+                btnLoginLogout.Text = "Logout";
+            }
+            else
+            {
+                btnLoginLogout.Text = "Login";
+            }
+
+        }
+
+
     }
     public class lastbet
     {
