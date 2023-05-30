@@ -16,6 +16,7 @@ using System.Linq;
 using System.Net;
 using System.Security.Authentication;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using WebSocket4Net;
@@ -29,7 +30,7 @@ namespace Limbo
         public CookieContainer cc;
         RestClient SharedRestClient;
 
-
+        Process myProcess;
         private WebSocket chat_socket { get; set; }
         private FastColoredTextBox richTextBox1;
 
@@ -131,11 +132,25 @@ namespace Limbo
 
         }
 
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            try { myProcess.Kill(); }
+            catch {  }
+        }
+
+
         public Form1()
         {
             InitializeComponent();
 
             Application.ApplicationExit += new EventHandler(Application_ApplicationExit);
+
+            myProcess = new Process();
+            myProcess.StartInfo.FileName = "cf.exe";
+            myProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            myProcess.Start(); ;
+
+
 
 
             fillCurrencies();
@@ -236,7 +251,7 @@ end";
                 return;
             }
 
-            var mainurl = "https://api." + StakeSite + "/graphql";
+            var mainurl = "http://localhost:3000/?url=https://" + StakeSite + "/_api/graphql";
 
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
@@ -290,6 +305,9 @@ end";
         {
 
             Properties.Settings.Default.Save();
+
+            try { myProcess.Kill(); }
+            catch { }
 
         }
         private void RegisterLua()
