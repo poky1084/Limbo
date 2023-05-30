@@ -763,9 +763,9 @@ end";
             {
                 if (running)
                 {
-
+                    await CheckBalance();
                     //var mainurl = "https://api." + StakeSite + "/graphql";
-                   // var request = new RestRequest(Method.POST);
+                    // var request = new RestRequest(Method.POST);
                     //var client = new RestClient(mainurl);
 
                     BetQuery payload = new BetQuery
