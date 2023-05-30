@@ -763,7 +763,7 @@ end";
             {
                 if (running)
                 {
-                    await CheckBalance();
+                    
                     //var mainurl = "https://api." + StakeSite + "/graphql";
                     // var request = new RestRequest(Method.POST);
                     //var client = new RestClient(mainurl);
@@ -874,7 +874,7 @@ end";
 
                         highestBet.Add(amount);
                         highestBet = new List<decimal> { highestBet.Max() };
-
+                        await CheckBalance();
                         SetStatistics();
 
 
