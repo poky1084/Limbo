@@ -13,12 +13,11 @@ using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
-using System.Net;
 using System.Security.Authentication;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Net;
 using WebSocket4Net;
 
 namespace Limbo
@@ -26,11 +25,7 @@ namespace Limbo
     public partial class Form1 : Form
     {
 
-
-        public CookieContainer cc;
-        RestClient SharedRestClient;
-
-        Process myProcess;
+        CookieContainer cc = new CookieContainer();
         private WebSocket chat_socket { get; set; }
         private FastColoredTextBox richTextBox1;
 
@@ -113,44 +108,39 @@ namespace Limbo
             "SAND",
             "SHIB",
             "UNI",
-            "USDC"
+            "USDC",
+            "VND",
+            "TRY",
+            "TRUMP",
+            "SWEEPS",
+            "POL",
+            "BRL"
+
        };
 
 
         private bool is_connected = false;
+        private string UserAgent = "";
+        private string ClearanceCookie = "";
 
         private void fillCurrencies()
         {
             // fill currency combobox
 
-            currencySelector.Items.Clear();
+            currencyComboBox.Items.Clear();
 
             foreach (var item in currenciesAvailable)
             {
-                currencySelector.Items.Add(item);
+                currencyComboBox.Items.Add(item);
             }
 
         }
-
-        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            try { myProcess.Kill(); }
-            catch {  }
-        }
-
 
         public Form1()
         {
             InitializeComponent();
 
             Application.ApplicationExit += new EventHandler(Application_ApplicationExit);
-
-            myProcess = new Process();
-            myProcess.StartInfo.FileName = "cf.exe";
-            myProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            myProcess.Start(); ;
-
-
 
 
             fillCurrencies();
@@ -165,6 +155,7 @@ namespace Limbo
             listView1.BackColor = Color.FromArgb(249, 249, 249);
             listBox3.BackColor = Color.FromArgb(249, 249, 249);
             //listView1.Hide();
+            listView1.SetDoubleBuffered(true);
 
             Text += " - " + Application.ProductVersion;
             Icon = Icon.ExtractAssociatedIcon(System.Reflection.Assembly.GetExecutingAssembly().Location);
@@ -217,70 +208,11 @@ namespace Limbo
             richTextBox1.BackColor = Color.FromArgb(249, 249, 249);
             tabPageLua.Controls.Add(richTextBox1);
 
-
             richTextBox1.TextChanged += this.richTextBox1_TextChanged;
 
-            //richTextBox1.Text = Properties.Settings.Default.textCode;
-
-            richTextBox1.Text = @"nextbet  = 0.00000000 --sets your first bet.
-target = 2 -- set target
-
-function dobet()
-    if (win) then
-        print(lastBet.result) 
-    end
-end";
+            richTextBox1.Text = Properties.Settings.Default.textCode;
 
         }
-
-
-        /// <summary>
-        /// CreateOrUseDefaultRestClient
-        /// </summary>
-        /// <param name="dispose"></param>
-        private void CreateOrUseDefaultRestClient(bool dispose = false)
-        {
-            if (dispose == true)
-            {
-                SharedRestClient = null;
-                cc = null;
-            }
-
-            if (SharedRestClient != null)
-            {
-                return;
-            }
-
-            var mainurl = "http://localhost:3000/?url=https://" + StakeSite + "/_api/graphql";
-
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-
-            this.cc = new CookieContainer();
-
-            SharedRestClient = new RestClient();
-            SharedRestClient.BaseUrl = new Uri(mainurl);
-            SharedRestClient.CookieContainer = this.cc;
-            SharedRestClient.UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36";
-        }
-
-        /// <summary>
-        /// CreateDefaultRestRequest
-        /// </summary>
-        /// <param name="apiKey"></param>
-        /// <returns></returns>
-        private RestRequest CreateDefaultRestRequest(string apiKey)
-        {
-            RestRequest restRequest = new RestRequest(Method.POST);
-            restRequest.AddHeader("authorization", string.Format("Bearer {0}", apiKey));
-            restRequest.AddHeader("x-access-token", apiKey);
-            restRequest.AddHeader("Content-type", "application/json");
-            return restRequest;
-        }
-
-
-
-
-
         private void listBox3_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Control == true && e.KeyCode == Keys.C)
@@ -305,9 +237,6 @@ end";
         {
 
             Properties.Settings.Default.Save();
-
-            try { myProcess.Kill(); }
-            catch { }
 
         }
         private void RegisterLua()
@@ -369,7 +298,7 @@ end";
         {
             running = false;
             button1.Enabled = true;
-            currencySelector.Enabled = true;
+            currencyComboBox.Enabled = true;
             button1.Text = "Start";
         }
 
@@ -497,16 +426,25 @@ end";
 
         private async void textBox1_TextChanged(object sender, EventArgs e)
         {
-            token = apiKeyInput.Text;
+            token = textBox1.Text;
             Properties.Settings.Default.token = token;
+            if (token.Length == 96)
+            {
+                //Connect();
+               // await Authorize();
 
+            }
+            else
+            {
+                //toolStripStatusLabel1.Text = "Disconnected";
+            }
         }
 
         private void currencyComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            currencySelected = currenciesAvailable[currencySelector.SelectedIndex].ToLower();
-            Properties.Settings.Default.indexCurrency = currencySelector.SelectedIndex;
-            string[] current = currencySelector.Text.Split(' ');
+            currencySelected = currenciesAvailable[currencyComboBox.SelectedIndex].ToLower();
+            Properties.Settings.Default.indexCurrency = currencyComboBox.SelectedIndex;
+            string[] current = currencyComboBox.Text.Split(' ');
             if (current.Length > 1)
             {
                 balanceLabel.Text = current[1] + " " + currencySelected;
@@ -515,8 +453,8 @@ end";
 
         private void SiteComboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
-            StakeSite = mirrorSiteSelector.Text.ToLower();
-            Properties.Settings.Default.indexSite = mirrorSiteSelector.SelectedIndex;
+            StakeSite = SiteComboBox2.Text.ToLower();
+            Properties.Settings.Default.indexSite = SiteComboBox2.SelectedIndex;
         }
 
         private async void button1_Click(object sender, EventArgs e)
@@ -547,13 +485,13 @@ end";
                 }
                 GetLuaVariables();
 
-                currencySelector.SelectedIndex = Array.FindIndex(currenciesAvailable, row => row == currencySelected.ToUpper());
+                currencyComboBox.SelectedIndex = Array.FindIndex(currenciesAvailable, row => row == currencySelected.ToUpper());
                 if (ready == true)
                 {
                     button1.Enabled = false;
                     running = true;
                     button1.Text = "Stop";
-                    currencySelector.Enabled = false;
+                    currencyComboBox.Enabled = false;
                     beginMs = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
                     StartBet();
                 }
@@ -632,7 +570,7 @@ end";
 
                 is_connected = true;
 
-                await Balances();
+                //await Balances();
             }
             else
             {
@@ -676,7 +614,7 @@ end";
                                 }
 
                                 var index = Array.FindIndex(currenciesAvailable, row => row.Contains(_msg.payload.data.availableBalances.balance.currency.ToUpper()));
-                                currencySelector.Items[index] = string.Format("{0} {1}", currenciesAvailable[index], _msg.payload.data.availableBalances.balance.amount.ToString("0.00000000"));
+                                currencyComboBox.Items[index] = string.Format("{0} {1}", currenciesAvailable[index], _msg.payload.data.availableBalances.balance.amount.ToString("0.00000000"));
 
 
 
@@ -747,8 +685,8 @@ end";
                 {
                     toolStripStatusLabel1.Text = string.Format("{0}", "Re-connecting...");
                 });
-                await Task.Delay(1000);
-                this.chat_socket.Open();
+                //await Task.Delay(1000);
+                ///this.chat_socket.Open();
             }
             catch (Exception ex)
             {
@@ -763,41 +701,32 @@ end";
             {
                 if (running)
                 {
-                    
-                    //var mainurl = "https://api." + StakeSite + "/graphql";
-                    // var request = new RestRequest(Method.POST);
-                    //var client = new RestClient(mainurl);
-
-                    BetQuery payload = new BetQuery
+                    var mainurl = "https://" + StakeSite + "/_api/graphql";
+                    var request = new RestRequest(Method.POST);
+                    var client = new RestClient(mainurl);
+                    client.CookieContainer = cc;
+                    client.UserAgent = UserAgent;
+                    client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
+                    BetQuery payload = new BetQuery();
+                    payload.variables = new BetClass()
                     {
-                        variables = new BetClass()
-                        {
-                            currency = currencySelected,
-                            amount = amount,
-                            multiplierTarget = target,
-                            identifier = RandomString(21)
+                        currency = currencySelected,
+                        amount = amount,
+                        multiplierTarget = target,
+                        identifier = RandomString(21)
 
-                        },
-                        query = "mutation LimboBet($amount: Float!, $multiplierTarget: Float!, $currency: CurrencyEnum!, $identifier: String!) {\n limboBet(\n amount: $amount\n currency: $currency\n multiplierTarget: $multiplierTarget\n identifier: $identifier\n  ) {\n...CasinoBet\n state {\n...CasinoGameLimbo\n    }\n  }\n}\n\nfragment CasinoBet on CasinoBet {\n id\n active\n payoutMultiplier\n amountMultiplier\n amount\n payout\n updatedAt\n currency\n game\n user {\n id\n name\n  }\n}\n\nfragment CasinoGameLimbo on CasinoGameLimbo {\n result\n multiplierTarget\n}\n"
                     };
 
-                    //request.AddHeader("Content-Type", "application/json");
-                   // request.AddHeader("x-access-token", token);
+                    payload.query = "mutation LimboBet($amount: Float!, $multiplierTarget: Float!, $currency: CurrencyEnum!, $identifier: String!) {\n limboBet(\n amount: $amount\n currency: $currency\n multiplierTarget: $multiplierTarget\n identifier: $identifier\n  ) {\n...CasinoBet\n state {\n...CasinoGameLimbo\n    }\n  }\n}\n\nfragment CasinoBet on CasinoBet {\n id\n active\n payoutMultiplier\n amountMultiplier\n amount\n payout\n updatedAt\n currency\n game\n user {\n id\n name\n  }\n}\n\nfragment CasinoGameLimbo on CasinoGameLimbo {\n result\n multiplierTarget\n}\n";
 
-                    //request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
+                    request.AddHeader("Content-Type", "application/json");
+                    request.AddHeader("x-access-token", token);
 
-
-                   // var restResponse =
-                    //    await client.ExecuteAsync(request);
+                    request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
 
 
-                    CreateOrUseDefaultRestClient();
-
-                    var request = CreateDefaultRestRequest(token);
-
-                    request.AddJsonBody(payload);
-
-                    var restResponse = await SharedRestClient.ExecuteAsync(request);
+                    var restResponse =
+                        await client.ExecuteAsync(request);
 
 
                     button1.Enabled = true;
@@ -844,7 +773,7 @@ end";
                         }
 
                         Log(response);
-                        //CheckBalance();
+                        await CheckBalance();
 
                         decimal profitCurr = response.data.limboBet.payout - response.data.limboBet.amount;
                         currentProfit += response.data.limboBet.payout - response.data.limboBet.amount;
@@ -874,7 +803,7 @@ end";
 
                         highestBet.Add(amount);
                         highestBet = new List<decimal> { highestBet.Max() };
-                        await CheckBalance();
+
                         SetStatistics();
 
 
@@ -891,7 +820,7 @@ end";
                         });
 
 
-                        if (data.Count > 50)
+                        if (data.Count > 20)
                         {
                             data.RemoveAt(0);
                             xList.RemoveAt(0);
@@ -930,28 +859,25 @@ end";
         {
             try
             {
+                var mainurl = "https://" + StakeSite + "/_api/graphql";
+                var request = new RestRequest(Method.POST);
+                var client = new RestClient(mainurl);
+                client.CookieContainer = cc;
+                client.UserAgent = UserAgent;
+                client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
+                BetQuery payload = new BetQuery();
+                payload.operationName = "UserBalances";
+                payload.query = "query UserBalances {\n  user {\n    id\n    balances {\n      available {\n        amount\n        currency\n        __typename\n      }\n      vault {\n        amount\n        currency\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n";
 
-                //var mainurl = "https://api." + StakeSite + "/graphql";
-                //var request = new RestRequest(Method.POST);
-                //var client = new RestClient(mainurl);
+                request.AddHeader("Content-Type", "application/json");
+                request.AddHeader("x-access-token", token);
 
-                BetQuery payload = new BetQuery
-                {
-                    operationName = "UserBalances",
-                    query = "query UserBalances {\n  user {\n    id\n    balances {\n      available {\n        amount\n        currency\n        __typename\n      }\n      vault {\n        amount\n        currency\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
-                };
+                request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
 
-                //request.AddHeader("Content-Type", "application/json");
-                //request.AddHeader("x-access-token", token);
-                //request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
 
-                CreateOrUseDefaultRestClient();
 
-                var request = CreateDefaultRestRequest(token);
-
-                request.AddJsonBody(payload);
-
-                var restResponse = await SharedRestClient.ExecuteAsync(request);
+                var restResponse =
+                    await client.ExecuteAsync(request);
 
 
                 //Debug.WriteLine(restResponse.Content);
@@ -980,7 +906,7 @@ end";
                                 {
                                     if (response.data.user.balances[i].available.currency == currenciesAvailable[s].ToLower())
                                     {
-                                        currencySelector.Items[s] = string.Format("{0} {1}", currenciesAvailable[s], response.data.user.balances[i].available.amount.ToString("0.00000000"));
+                                        currencyComboBox.Items[s] = string.Format("{0} {1}", currenciesAvailable[s], response.data.user.balances[i].available.amount.ToString("0.00000000"));
 
                                         break;
                                     }
@@ -1007,17 +933,18 @@ end";
         }
         private void clearLinkbtn_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            apiKeyInput.Clear();
-            apiKeyInput.Enabled = true;
+            textBox1.Clear();
+            textBox1.Enabled = true;
             token = "";
-            toolStripStatusLabel1.Text = "Unauthorized";
+            toolStripStatusLabel1.Text = "Disconnected";
         }
 
         private async void CheckBtn_Click(object sender, EventArgs e)
         {
-            btnCheckBalance.Enabled = false;
+            CheckBtn.Enabled = false;
             await CheckBalance();
-            btnCheckBalance.Enabled = true;
+            await Authorize();
+            CheckBtn.Enabled = true;
         }
 
         public string RandomString(int length)
@@ -1033,7 +960,7 @@ end";
         }
         private void richTextBox2_TextChanged(object sender, EventArgs e)
         {
-            if (richTextBox2.Lines.Length > 200)
+            if (richTextBox2.Lines.Length > 100)
             {
                 List<string> lines = richTextBox2.Lines.ToList();
                 lines.RemoveAt(0);
@@ -1117,39 +1044,29 @@ end";
         {
             try
             {
-                //var mainurl = "https://api." + StakeSite + "/graphql";
-                //var request = new RestRequest(Method.POST);
-                //var client = new RestClient(mainurl);
-
-                BetQuery payload = new BetQuery
+                var mainurl = "https://" + StakeSite + "/_api/graphql";
+                var request = new RestRequest(Method.POST);
+                var client = new RestClient(mainurl);
+                client.CookieContainer = cc;
+                client.UserAgent = UserAgent;
+                client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
+                BetQuery payload = new BetQuery();
+                payload.operationName = "CreateVaultDeposit";
+                payload.variables = new BetClass()
                 {
-                    operationName = "CreateVaultDeposit",
-                    variables = new BetClass()
-                    {
-                        currency = currencySelected.ToLower(),
-                        amount = sentamount
-                    },
-                    query = "mutation CreateVaultDeposit($currency: CurrencyEnum!, $amount: Float!) {\n  createVaultDeposit(currency: $currency, amount: $amount) {\n    id\n    amount\n    currency\n    user {\n      id\n      balances {\n        available {\n          amount\n          currency\n          __typename\n        }\n        vault {\n          amount\n          currency\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
+                    currency = currencySelected.ToLower(),
+                    amount = sentamount
                 };
+                payload.query = "mutation CreateVaultDeposit($currency: CurrencyEnum!, $amount: Float!) {\n  createVaultDeposit(currency: $currency, amount: $amount) {\n    id\n    amount\n    currency\n    user {\n      id\n      balances {\n        available {\n          amount\n          currency\n          __typename\n        }\n        vault {\n          amount\n          currency\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n";
+                request.AddHeader("Content-Type", "application/json");
+                request.AddHeader("x-access-token", token);
 
-                //request.AddHeader("Content-Type", "application/json");
-                //request.AddHeader("x-access-token", token);
-
-                //request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
+                request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
                 //request.AddJsonBody(payload);
                 //IRestResponse response = client.Execute(request);
 
-                //var restResponse =
-                //    await client.ExecuteAsync(request);
-
-
-                CreateOrUseDefaultRestClient();
-
-                var request = CreateDefaultRestRequest(token);
-
-                request.AddJsonBody(payload);
-
-                var restResponse = await SharedRestClient.ExecuteAsync(request);
+                var restResponse =
+                    await client.ExecuteAsync(request);
 
                 // Will output the HTML contents of the requested page
                 //Debug.WriteLine(restResponse.Content);
@@ -1178,38 +1095,28 @@ end";
         {
             try
             {
-                // var mainurl = "https://api." + StakeSite + "/graphql";
-                // var request = new RestRequest(Method.POST);
-                // var client = new RestClient(mainurl);
-
-                BetQuery payload = new BetQuery
+                var mainurl = "https://" + StakeSite + "/_api/graphql";
+                var request = new RestRequest(Method.POST);
+                var client = new RestClient(mainurl);
+                client.CookieContainer = cc;
+                client.UserAgent = UserAgent;
+                client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
+                BetQuery payload = new BetQuery();
+                payload.operationName = "RotateSeedPair";
+                payload.variables = new BetClass()
                 {
-                    operationName = "RotateSeedPair",
-                    variables = new BetClass()
-                    {
-                        seed = RandomString(10)
-                    },
-                    query = "mutation RotateSeedPair($seed: String!) {\n  rotateSeedPair(seed: $seed) {\n    clientSeed {\n      user {\n        id\n        activeClientSeed {\n          id\n          seed\n          __typename\n        }\n        activeServerSeed {\n          id\n          nonce\n          seedHash\n          nextSeedHash\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
+                    seed = RandomString(10)
                 };
+                payload.query = "mutation RotateSeedPair($seed: String!) {\n  rotateSeedPair(seed: $seed) {\n    clientSeed {\n      user {\n        id\n        activeClientSeed {\n          id\n          seed\n          __typename\n        }\n        activeServerSeed {\n          id\n          nonce\n          seedHash\n          nextSeedHash\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n";
+                request.AddHeader("Content-Type", "application/json");
+                request.AddHeader("x-access-token", token);
 
-                //  request.AddHeader("Content-Type", "application/json");
-                //  request.AddHeader("x-access-token", token);
-
-                // request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
+                request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
                 //request.AddJsonBody(payload);
                 //IRestResponse response = client.Execute(request);
 
-                //  var restResponse =
-                //      await client.ExecuteAsync(request);
-
-
-                CreateOrUseDefaultRestClient();
-
-                var request = CreateDefaultRestRequest(token);
-
-                request.AddJsonBody(payload);
-
-                var restResponse = await SharedRestClient.ExecuteAsync(request);
+                var restResponse =
+                    await client.ExecuteAsync(request);
 
                 // Will output the HTML contents of the requested page
                 //Debug.WriteLine(restResponse.Content);
@@ -1239,38 +1146,28 @@ end";
         {
             try
             {
-                // var mainurl = "https://api." + StakeSite + "/graphql";
-                // var request = new RestRequest(Method.POST);
-                // var client = new RestClient(mainurl);
-
-                BetQuery payload = new BetQuery
+                var mainurl = "https://api." + StakeSite + "/graphql";
+                var request = new RestRequest(Method.POST);
+                var client = new RestClient(mainurl);
+                client.CookieContainer = cc;
+                client.UserAgent = UserAgent;
+                client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
+                BetQuery payload = new BetQuery();
+                payload.operationName = "RotateSeedPair";
+                payload.variables = new BetClass()
                 {
-                    operationName = "RotateSeedPair",
-                    variables = new BetClass()
-                    {
-                        seed = RandomString(10)
-                    },
-                    query = "mutation RotateSeedPair($seed: String!) {\n  rotateSeedPair(seed: $seed) {\n    clientSeed {\n      user {\n        id\n        activeClientSeed {\n          id\n          seed\n          __typename\n        }\n        activeServerSeed {\n          id\n          nonce\n          seedHash\n          nextSeedHash\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
+                    seed = RandomString(10)
                 };
+                payload.query = "mutation RotateSeedPair($seed: String!) {\n  rotateSeedPair(seed: $seed) {\n    clientSeed {\n      user {\n        id\n        activeClientSeed {\n          id\n          seed\n          __typename\n        }\n        activeServerSeed {\n          id\n          nonce\n          seedHash\n          nextSeedHash\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n";
+                request.AddHeader("Content-Type", "application/json");
+                request.AddHeader("x-access-token", token);
 
-                // request.AddHeader("Content-Type", "application/json");
-                // request.AddHeader("x-access-token", token);
-
-                // request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
+                request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
                 //request.AddJsonBody(payload);
                 //IRestResponse response = client.Execute(request);
 
-                // var restResponse =
-                //     await client.ExecuteAsync(request);
-
-                CreateOrUseDefaultRestClient();
-
-                var request = CreateDefaultRestRequest(token);
-
-                request.AddJsonBody(payload);
-
-                var restResponse = await SharedRestClient.ExecuteAsync(request);
-
+                var restResponse =
+                    await client.ExecuteAsync(request);
 
                 // Will output the HTML contents of the requested page
                 //Debug.WriteLine(restResponse.Content);
@@ -1300,50 +1197,40 @@ end";
         {
             try
             {
-                //var mainurl = "https://api." + StakeSite + "/graphql";
-                //var request = new RestRequest(Method.POST);
-                //var client = new RestClient(mainurl);
+                var mainurl = "https://" + StakeSite + "/_api/graphql";
+                var request = new RestRequest(Method.POST);
+                var client = new RestClient(mainurl);
+                client.CookieContainer = cc;
+                client.UserAgent = UserAgent;
+                client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
 
-                BetQuery payload = new BetQuery
-                {
-                    operationName = "initialUserRequest",
-                    variables = new BetClass() { },
-                    query = "query initialUserRequest {\n  user {\n    ...UserAuth\n    __typename\n  }\n}\n\nfragment UserAuth on User {\n  id\n  name\n  email\n  hasPhoneNumberVerified\n  hasEmailVerified\n  hasPassword\n  intercomHash\n  createdAt\n  hasTfaEnabled\n  mixpanelId\n  hasOauth\n  isKycBasicRequired\n  isKycExtendedRequired\n  isKycFullRequired\n  kycBasic {\n    id\n    status\n    __typename\n  }\n  kycExtended {\n    id\n    status\n    __typename\n  }\n  kycFull {\n    id\n    status\n    __typename\n  }\n  flags {\n    flag\n    __typename\n  }\n  roles {\n    name\n    __typename\n  }\n  balances {\n    ...UserBalanceFragment\n    __typename\n  }\n  activeClientSeed {\n    id\n    seed\n    __typename\n  }\n  previousServerSeed {\n    id\n    seed\n    __typename\n  }\n  activeServerSeed {\n    id\n    seedHash\n    nextSeedHash\n    nonce\n    blocked\n    __typename\n  }\n  __typename\n}\n\nfragment UserBalanceFragment on UserBalance {\n  available {\n    amount\n    currency\n    __typename\n  }\n  vault {\n    amount\n    currency\n    __typename\n  }\n  __typename\n}\n"
-                };
+                BetQuery payload = new BetQuery();
+                payload.operationName = "UserBalances";
+                payload.query = "query UserBalances {\n  user {\n    id\n    balances {\n      available {\n        amount\n        currency\n        __typename\n      }\n      vault {\n        amount\n        currency\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n";
+                request.AddHeader("Content-Type", "application/json");
+                request.AddHeader("x-access-token", token);
 
-                //request.AddHeader("Content-Type", "application/json");
-                //request.AddHeader("x-access-token", token);
-                //request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
+                request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
                 //request.AddJsonBody(payload);
                 //IRestResponse response = client.Execute(request);
-                //var restResponse =
-                //    await client.ExecuteAsync(request);
 
-
-                CreateOrUseDefaultRestClient(true);
-
-                var request = CreateDefaultRestRequest(token);
-
-                request.AddJsonBody(payload);
-
-                var restResponse = await SharedRestClient.ExecuteAsync(request);
+                var restResponse =
+                    await client.ExecuteAsync(request);
 
                 // Will output the HTML contents of the requested page
                 //Debug.WriteLine(restResponse.Content);
-                ActiveData response = JsonConvert.DeserializeObject<ActiveData>(restResponse.Content);
+                BalancesData response = JsonConvert.DeserializeObject<BalancesData>(restResponse.Content);
                 //System.Diagnostics.Debug.WriteLine(restResponse.Content);
                 if (response == null || response.errors != null)
                 {
-                    toolStripStatusLabel1.Text = "Unauthorized";
-                    is_connected = false;
+                    toolStripStatusLabel1.Text = "Disconnected";
                 }
                 else
                 {
                     if (response.data != null)
                     {
-                        is_connected = true;
-                        toolStripStatusLabel1.Text = String.Format("Authorized.");
-                        apiKeyInput.Enabled = false;
+                        toolStripStatusLabel1.Text = String.Format("Connected.");
+                        textBox1.Enabled = false;
                         for (var i = 0; i < response.data.user.balances.Count; i++)
                         {
                             if (response.data.user.balances[i].available.currency == currencySelected.ToLower())
@@ -1359,7 +1246,7 @@ end";
                                 {
                                     if (response.data.user.balances[i].available.currency == currenciesAvailable[s].ToLower())
                                     {
-                                        currencySelector.Items[s] = string.Format("{0} {1}", currenciesAvailable[s], response.data.user.balances[i].available.amount.ToString("0.00000000"));
+                                        currencyComboBox.Items[s] = string.Format("{0} {1}", currenciesAvailable[s], response.data.user.balances[i].available.amount.ToString("0.00000000"));
                                         //currencySelect.Items.Add(string.Format("{0} {1}", s, response.data.user.balances[i].available.amount.ToString("0.00000000")));
                                         break;
                                     }
@@ -1380,13 +1267,15 @@ end";
         private void Form1_Load(object sender, EventArgs e)
         {
 
-            apiKeyInput.Text = Properties.Settings.Default.token;
-            currencySelector.SelectedIndex = Properties.Settings.Default.indexCurrency;
-            mirrorSiteSelector.SelectedIndex = Properties.Settings.Default.indexSite;
+            textBox1.Text = Properties.Settings.Default.token;
+            currencyComboBox.SelectedIndex = Properties.Settings.Default.indexCurrency;
+            SiteComboBox2.SelectedIndex = Properties.Settings.Default.indexSite;
             ServerSeedBox.Text = Properties.Settings.Default.serverSeed;
             ClientSeedBox.Text = Properties.Settings.Default.clientSeed;
             NonceBox.Text = Properties.Settings.Default.nonce.ToString();
             NonceStopBox.Text = Properties.Settings.Default.nonceStop.ToString();
+            textBox2.Text = Properties.Settings.Default.cookie;
+            textBox3.Text = Properties.Settings.Default.agent;
         }
 
 
@@ -1690,36 +1579,32 @@ end";
             });
         }
 
-        private async void btnLoginLogout_Click(object sender, EventArgs e)
+        private void textBox2_TextChanged(object sender, EventArgs e)
         {
-
-            if ((sender as Button).Text== "Logout")
-            {
-                clearLinkbtn_LinkClicked(null, null);
-                return;
-            }
-
-            if (token.Length == 96)
-            {
-                await Authorize();
-            }
-            else
-            {
-                toolStripStatusLabel1.Text = "Unauthorized";
-            }
-
-            if (is_connected)
-            {
-                btnLoginLogout.Text = "Logout";
-            }
-            else
-            {
-                btnLoginLogout.Text = "Login";
-            }
-
+            ClearanceCookie = textBox2.Text;
+            Properties.Settings.Default.cookie = ClearanceCookie;
         }
 
-
+        private void textBox3_TextChanged(object sender, EventArgs e)
+        {
+            UserAgent = textBox3.Text;
+            Properties.Settings.Default.agent = UserAgent;
+        }
+    }
+    public static class ListViewExtensions
+    {
+        /// <summary>
+        /// Sets the double buffered property of a list view to the specified value
+        /// </summary>
+        /// <param name="listView">The List view</param>
+        /// <param name="doubleBuffered">Double Buffered or not</param>
+        public static void SetDoubleBuffered(this System.Windows.Forms.ListView listView, bool doubleBuffered = true)
+        {
+            listView
+                .GetType()
+                .GetProperty("DoubleBuffered", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                .SetValue(listView, doubleBuffered, null);
+        }
     }
     public class lastbet
     {

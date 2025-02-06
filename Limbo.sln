@@ -7,24 +7,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Limbo", "Limbo\Limbo.csproj
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
-		Release|Any CPU = Release|Any CPU
-		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{3D320A10-1B37-4971-9697-66812E59B194}.Debug|Any CPU.ActiveCfg = Debug|x86
-		{3D320A10-1B37-4971-9697-66812E59B194}.Debug|Any CPU.Build.0 = Debug|x86
-		{3D320A10-1B37-4971-9697-66812E59B194}.Debug|x64.ActiveCfg = Debug|x86
-		{3D320A10-1B37-4971-9697-66812E59B194}.Debug|x64.Build.0 = Debug|x86
 		{3D320A10-1B37-4971-9697-66812E59B194}.Debug|x86.ActiveCfg = Debug|x86
 		{3D320A10-1B37-4971-9697-66812E59B194}.Debug|x86.Build.0 = Debug|x86
-		{3D320A10-1B37-4971-9697-66812E59B194}.Release|Any CPU.ActiveCfg = Release|x86
-		{3D320A10-1B37-4971-9697-66812E59B194}.Release|Any CPU.Build.0 = Release|x86
-		{3D320A10-1B37-4971-9697-66812E59B194}.Release|x64.ActiveCfg = Release|x86
-		{3D320A10-1B37-4971-9697-66812E59B194}.Release|x64.Build.0 = Release|x86
 		{3D320A10-1B37-4971-9697-66812E59B194}.Release|x86.ActiveCfg = Release|x86
 		{3D320A10-1B37-4971-9697-66812E59B194}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
