@@ -127,11 +127,11 @@ namespace Limbo
         {
             // fill currency combobox
 
-            currencyComboBox.Items.Clear();
+            //currencyComboBox.Items.Clear();
 
             foreach (var item in currenciesAvailable)
             {
-                currencyComboBox.Items.Add(item);
+                //currencyComboBox.Items.Add(item);
             }
 
         }
@@ -440,21 +440,23 @@ namespace Limbo
             }
         }
 
-        private void currencyComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        private async void currencyComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            currencySelected = currenciesAvailable[currencyComboBox.SelectedIndex].ToLower();
-            Properties.Settings.Default.indexCurrency = currencyComboBox.SelectedIndex;
-            string[] current = currencyComboBox.Text.Split(' ');
-            if (current.Length > 1)
-            {
-                balanceLabel.Text = current[1] + " " + currencySelected;
-            }
+            currencySelected = currencyComboBox.Text.ToLower();
+            await CheckBalance();
+            await Authorize();
+            //Properties.Settings.Default.indexCurrency = currencyComboBox.SelectedIndex;
+            //string[] current = currencyComboBox.Text.Split(' ');
+            //if (current.Length > 1)
+            //{
+            balanceLabel.Text = String.Format("{0} {1}", currentBal.ToString("0.00000000"), currencySelected);
+            //}
         }
 
         private void SiteComboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
-            StakeSite = SiteComboBox2.Text.ToLower();
-            Properties.Settings.Default.indexSite = SiteComboBox2.SelectedIndex;
+            StakeSite = textBox2.Text.ToLower();
+            Properties.Settings.Default.indexSite = textBox2.Text;
         }
 
         private async void button1_Click(object sender, EventArgs e)
@@ -485,13 +487,13 @@ namespace Limbo
                 }
                 GetLuaVariables();
 
-                currencyComboBox.SelectedIndex = Array.FindIndex(currenciesAvailable, row => row == currencySelected.ToUpper());
+                //currencyComboBox.SelectedIndex = Array.FindIndex(currenciesAvailable, row => row == currencySelected.ToUpper());
                 if (ready == true)
                 {
                     button1.Enabled = false;
                     running = true;
                     button1.Text = "Stop";
-                    currencyComboBox.Enabled = false;
+                    //currencyComboBox.Enabled = false;
                     beginMs = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
                     StartBet();
                 }
@@ -613,8 +615,8 @@ namespace Limbo
 
                                 }
 
-                                var index = Array.FindIndex(currenciesAvailable, row => row.Contains(_msg.payload.data.availableBalances.balance.currency.ToUpper()));
-                                currencyComboBox.Items[index] = string.Format("{0} {1}", currenciesAvailable[index], _msg.payload.data.availableBalances.balance.amount.ToString("0.00000000"));
+                                //var index = Array.FindIndex(currenciesAvailable, row => row.Contains(_msg.payload.data.availableBalances.balance.currency.ToUpper()));
+                                //currencyComboBox.Items[index] = string.Format("{0} {1}", currenciesAvailable[index], _msg.payload.data.availableBalances.balance.amount.ToString("0.00000000"));
 
 
 
@@ -701,13 +703,14 @@ namespace Limbo
             {
                 if (running)
                 {
-                    var mainurl = "https://" + StakeSite + "/_api/graphql";
+                    var mainurl = "http://localhost:5000/graphql?url=https://" + StakeSite + "/_api/graphql";
                     var request = new RestRequest(Method.POST);
                     var client = new RestClient(mainurl);
                     client.CookieContainer = cc;
                     client.UserAgent = UserAgent;
                     client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
                     BetQuery payload = new BetQuery();
+                    payload.token = token;
                     payload.variables = new BetClass()
                     {
                         currency = currencySelected,
@@ -859,13 +862,14 @@ namespace Limbo
         {
             try
             {
-                var mainurl = "https://" + StakeSite + "/_api/graphql";
+                var mainurl = "http://localhost:5000/graphql?url=https://" + StakeSite + "/_api/graphql";
                 var request = new RestRequest(Method.POST);
                 var client = new RestClient(mainurl);
                 client.CookieContainer = cc;
                 client.UserAgent = UserAgent;
                 client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
                 BetQuery payload = new BetQuery();
+                payload.token = token;
                 payload.operationName = "UserBalances";
                 payload.query = "query UserBalances {\n  user {\n    id\n    balances {\n      available {\n        amount\n        currency\n        __typename\n      }\n      vault {\n        amount\n        currency\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n";
 
@@ -902,15 +906,7 @@ namespace Limbo
                             }
                             if (true)
                             {
-                                for (int s = 0; s < currenciesAvailable.Length; s++)
-                                {
-                                    if (response.data.user.balances[i].available.currency == currenciesAvailable[s].ToLower())
-                                    {
-                                        currencyComboBox.Items[s] = string.Format("{0} {1}", currenciesAvailable[s], response.data.user.balances[i].available.amount.ToString("0.00000000"));
-
-                                        break;
-                                    }
-                                }
+                                
                             }
                         }
                     }
@@ -1044,13 +1040,14 @@ namespace Limbo
         {
             try
             {
-                var mainurl = "https://" + StakeSite + "/_api/graphql";
+                var mainurl = "http://localhost:5000/graphql?url=https://" + StakeSite + "/_api/graphql";
                 var request = new RestRequest(Method.POST);
                 var client = new RestClient(mainurl);
                 client.CookieContainer = cc;
                 client.UserAgent = UserAgent;
                 client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
                 BetQuery payload = new BetQuery();
+                payload.token = token;
                 payload.operationName = "CreateVaultDeposit";
                 payload.variables = new BetClass()
                 {
@@ -1095,13 +1092,14 @@ namespace Limbo
         {
             try
             {
-                var mainurl = "https://" + StakeSite + "/_api/graphql";
+                var mainurl = "http://localhost:5000/graphql?url=https://" + StakeSite + "/_api/graphql";
                 var request = new RestRequest(Method.POST);
                 var client = new RestClient(mainurl);
                 client.CookieContainer = cc;
                 client.UserAgent = UserAgent;
                 client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
                 BetQuery payload = new BetQuery();
+                payload.token = token;
                 payload.operationName = "RotateSeedPair";
                 payload.variables = new BetClass()
                 {
@@ -1197,7 +1195,7 @@ namespace Limbo
         {
             try
             {
-                var mainurl = "https://" + StakeSite + "/_api/graphql";
+                var mainurl = "http://localhost:5000/graphql?url=https://" + StakeSite + "/_api/graphql";
                 var request = new RestRequest(Method.POST);
                 var client = new RestClient(mainurl);
                 client.CookieContainer = cc;
@@ -1205,6 +1203,7 @@ namespace Limbo
                 client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
 
                 BetQuery payload = new BetQuery();
+                payload.token = token;
                 payload.operationName = "UserBalances";
                 payload.query = "query UserBalances {\n  user {\n    id\n    balances {\n      available {\n        amount\n        currency\n        __typename\n      }\n      vault {\n        amount\n        currency\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n";
                 request.AddHeader("Content-Type", "application/json");
@@ -1230,7 +1229,7 @@ namespace Limbo
                     if (response.data != null)
                     {
                         toolStripStatusLabel1.Text = String.Format("Connected.");
-                        textBox1.Enabled = false;
+                        //textBox1.Enabled = false;
                         for (var i = 0; i < response.data.user.balances.Count; i++)
                         {
                             if (response.data.user.balances[i].available.currency == currencySelected.ToLower())
@@ -1239,19 +1238,12 @@ namespace Limbo
                                 balanceLabel.Text = String.Format("{0} {1}", currentBal.ToString("0.00000000"), currencySelected);
 
                             }
-                            //currencySelect.Items.Clear();
-                            if (true)
-                            {
-                                for (int s = 0; s < currenciesAvailable.Length; s++)
-                                {
-                                    if (response.data.user.balances[i].available.currency == currenciesAvailable[s].ToLower())
-                                    {
-                                        currencyComboBox.Items[s] = string.Format("{0} {1}", currenciesAvailable[s], response.data.user.balances[i].available.amount.ToString("0.00000000"));
-                                        //currencySelect.Items.Add(string.Format("{0} {1}", s, response.data.user.balances[i].available.amount.ToString("0.00000000")));
-                                        break;
-                                    }
-                                }
-                            }
+                            
+                        }
+                        currencyComboBox.Items.Clear();
+                        for (var k = 0; k < response.data.user.balances.Count; k++)
+                        {
+                            currencyComboBox.Items.Add(response.data.user.balances[k].available.currency);
                         }
 
                     }
@@ -1268,14 +1260,14 @@ namespace Limbo
         {
 
             textBox1.Text = Properties.Settings.Default.token;
-            currencyComboBox.SelectedIndex = Properties.Settings.Default.indexCurrency;
-            SiteComboBox2.SelectedIndex = Properties.Settings.Default.indexSite;
+            //currencyComboBox.SelectedIndex = Properties.Settings.Default.indexCurrency;
+            textBox2.Text = Properties.Settings.Default.indexSite;
             ServerSeedBox.Text = Properties.Settings.Default.serverSeed;
             ClientSeedBox.Text = Properties.Settings.Default.clientSeed;
             NonceBox.Text = Properties.Settings.Default.nonce.ToString();
             NonceStopBox.Text = Properties.Settings.Default.nonceStop.ToString();
-            textBox2.Text = Properties.Settings.Default.cookie;
-            textBox3.Text = Properties.Settings.Default.agent;
+            //textBox2.Text = Properties.Settings.Default.cookie;
+            //textBox3.Text = Properties.Settings.Default.agent;
         }
 
 
@@ -1587,8 +1579,14 @@ namespace Limbo
 
         private void textBox3_TextChanged(object sender, EventArgs e)
         {
-            UserAgent = textBox3.Text;
-            Properties.Settings.Default.agent = UserAgent;
+            //UserAgent = textBox3.Text;
+            //Properties.Settings.Default.agent = UserAgent;
+        }
+
+        private void textBox2_TextChanged_1(object sender, EventArgs e)
+        {
+            StakeSite = textBox2.Text.ToLower();
+            Properties.Settings.Default.indexSite = textBox2.Text;
         }
     }
     public static class ListViewExtensions

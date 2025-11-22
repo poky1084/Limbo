@@ -8,8 +8,8 @@
     <Setting Name="indexCurrency" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">0</Value>
     </Setting>
-    <Setting Name="indexSite" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">0</Value>
+    <Setting Name="indexSite" Type="System.String" Scope="User">
+      <Value Profile="(Default)">stake.com</Value>
     </Setting>
     <Setting Name="textCode" Type="System.String" Scope="User">
       <Value Profile="(Default)">nextbet  = 0.00000000 --sets your first bet.

@@ -1,17 +1,30 @@
-# Limbo
-Limbo bot with Lua for Stake.com
-<br />
-<br />
-How to get clearance cookie and User-agent:<br />
-https://helpdesk.qbot.gg/hc/340888169/121/how-to-set-the-cloudflare-cf-clearance-cookie?category_id=30
-<br /><br />
-copy-paste the cf_clearance cookie into Cookie input<br />
-and paste User-Agent text into Agent input<br />
-<br />
-If you have missing cf_clearance cookie, then i suggest using another Stake mirror site.
-List of Stake mirrors: https://playstake.club/
-<br />
-<br />
+# Limbo-4 ---- 2026
+Limbo bot written for Stake original game.
+
 <b>Discord</b>: fisk_992 <br />
 <b>Stake</b>: poky1084 <br />
 <b>Telegram:</b>: @poky_1084
+
+Tutorial: https://www.youtube.com/watch?v=3NvXqEpnJ5c
+
+Install Python on your windows pc:
+https://www.python.org/downloads/
+
+You would install python packages to run the Python proxy server to
+bypass cloudflare.
+
+```
+pip install -r requirements.txt
+```
+
+To start the server, change the directory in Command Prompt to where the pyserver.py is located.
+Then type the following command and hit enter:
+
+```
+python pyserver.py
+```
+
+If the server is running you can check it with opening this URL in your browser:
+```
+http://localhost:5000/graphql?url=
+```
