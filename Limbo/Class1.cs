@@ -6,6 +6,13 @@ using System.Threading.Tasks;
 
 namespace Limbo
 {
+    public class BetSend
+    {
+        public string operationName { get; set; }
+        public string query { get; set; }
+        public BetClass variables { get; set; }
+
+    }
     public class BetQuery
     {
         public string operationName { get; set; }

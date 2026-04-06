@@ -212,6 +212,8 @@ namespace Limbo
 
             richTextBox1.Text = Properties.Settings.Default.textCode;
 
+            BrowserFetch.StartServer();
+
         }
         private void listBox3_KeyDown(object sender, KeyEventArgs e)
         {
@@ -238,6 +240,32 @@ namespace Limbo
 
             Properties.Settings.Default.Save();
 
+        }
+
+        private async Task<string> GraphQL(string operationName, string query,
+                                            BetClass variables = null)
+        {
+            var url = "https://" + StakeSite + "/_api/graphql";
+
+            var body = new BetSend
+            {
+                operationName = operationName,
+                query = query,
+                variables = variables
+            };
+
+            var options = new
+            {
+                method = "POST",
+                headers = new Dictionary<string, string>
+        {
+            { "Content-Type", "application/json" },
+            { "x-access-token", token }
+        },
+                body = body
+            };
+
+            return await BrowserFetch.FetchAsync(url, options);
         }
         private void RegisterLua()
         {
@@ -703,37 +731,20 @@ namespace Limbo
             {
                 if (running)
                 {
-                    var mainurl = "http://localhost:5000/graphql?url=https://" + StakeSite + "/_api/graphql";
-                    var request = new RestRequest(Method.POST);
-                    var client = new RestClient(mainurl);
-                    client.CookieContainer = cc;
-                    client.UserAgent = UserAgent;
-                    client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
-                    BetQuery payload = new BetQuery();
-                    payload.token = token;
-                    payload.variables = new BetClass()
-                    {
-                        currency = currencySelected,
-                        amount = amount,
-                        multiplierTarget = target,
-                        identifier = RandomString(21)
-
-                    };
-
-                    payload.query = "mutation LimboBet($amount: Float!, $multiplierTarget: Float!, $currency: CurrencyEnum!, $identifier: String!) {\n limboBet(\n amount: $amount\n currency: $currency\n multiplierTarget: $multiplierTarget\n identifier: $identifier\n  ) {\n...CasinoBet\n state {\n...CasinoGameLimbo\n    }\n  }\n}\n\nfragment CasinoBet on CasinoBet {\n id\n active\n payoutMultiplier\n amountMultiplier\n amount\n payout\n updatedAt\n currency\n game\n user {\n id\n name\n  }\n}\n\nfragment CasinoGameLimbo on CasinoGameLimbo {\n result\n multiplierTarget\n}\n";
-
-                    request.AddHeader("Content-Type", "application/json");
-                    request.AddHeader("x-access-token", token);
-
-                    request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
-
-
-                    var restResponse =
-                        await client.ExecuteAsync(request);
-
+                    var json = await GraphQL(
+            "LimboBet",
+            "mutation LimboBet($amount: Float!, $multiplierTarget: Float!, $currency: CurrencyEnum!, $identifier: String!) {\n limboBet(\n amount: $amount\n currency: $currency\n multiplierTarget: $multiplierTarget\n identifier: $identifier\n  ) {\n...CasinoBet\n state {\n...CasinoGameLimbo\n    }\n  }\n}\n\nfragment CasinoBet on CasinoBet {\n id\n active\n payoutMultiplier\n amountMultiplier\n amount\n payout\n updatedAt\n currency\n game\n user {\n id\n name\n  }\n}\n\nfragment CasinoGameLimbo on CasinoGameLimbo {\n result\n multiplierTarget\n}\n",
+            new BetClass
+            {
+                currency = currencySelected,
+                amount = amount,
+                multiplierTarget = target,
+                identifier = RandomString(21)
+            }
+                   );
 
                     button1.Enabled = true;
-                    Data response = JsonConvert.DeserializeObject<Data>(restResponse.Content);
+                    Data response = JsonConvert.DeserializeObject<Data>(json);
 
                     if (response.errors != null)
                     {
@@ -862,30 +873,13 @@ namespace Limbo
         {
             try
             {
-                var mainurl = "http://localhost:5000/graphql?url=https://" + StakeSite + "/_api/graphql";
-                var request = new RestRequest(Method.POST);
-                var client = new RestClient(mainurl);
-                client.CookieContainer = cc;
-                client.UserAgent = UserAgent;
-                client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
-                BetQuery payload = new BetQuery();
-                payload.token = token;
-                payload.operationName = "UserBalances";
-                payload.query = "query UserBalances {\n  user {\n    id\n    balances {\n      available {\n        amount\n        currency\n        __typename\n      }\n      vault {\n        amount\n        currency\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n";
-
-                request.AddHeader("Content-Type", "application/json");
-                request.AddHeader("x-access-token", token);
-
-                request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
-
-
-
-                var restResponse =
-                    await client.ExecuteAsync(request);
-
+                var json = await GraphQL(
+                     "UserBalances",
+                     "query UserBalances {\n  user {\n    id\n    balances {\n      available {\n        amount\n        currency\n        __typename\n      }\n      vault {\n        amount\n        currency\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
+                 );
 
                 //Debug.WriteLine(restResponse.Content);
-                BalancesData response = JsonConvert.DeserializeObject<BalancesData>(restResponse.Content);
+                BalancesData response = JsonConvert.DeserializeObject<BalancesData>(json);
 
 
                 if (response.errors != null)
@@ -1040,34 +1034,16 @@ namespace Limbo
         {
             try
             {
-                var mainurl = "http://localhost:5000/graphql?url=https://" + StakeSite + "/_api/graphql";
-                var request = new RestRequest(Method.POST);
-                var client = new RestClient(mainurl);
-                client.CookieContainer = cc;
-                client.UserAgent = UserAgent;
-                client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
-                BetQuery payload = new BetQuery();
-                payload.token = token;
-                payload.operationName = "CreateVaultDeposit";
-                payload.variables = new BetClass()
-                {
-                    currency = currencySelected.ToLower(),
-                    amount = sentamount
-                };
-                payload.query = "mutation CreateVaultDeposit($currency: CurrencyEnum!, $amount: Float!) {\n  createVaultDeposit(currency: $currency, amount: $amount) {\n    id\n    amount\n    currency\n    user {\n      id\n      balances {\n        available {\n          amount\n          currency\n          __typename\n        }\n        vault {\n          amount\n          currency\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n";
-                request.AddHeader("Content-Type", "application/json");
-                request.AddHeader("x-access-token", token);
-
-                request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
-                //request.AddJsonBody(payload);
-                //IRestResponse response = client.Execute(request);
-
-                var restResponse =
-                    await client.ExecuteAsync(request);
+                var json = await GraphQL(
+            "CreateVaultDeposit",
+            "mutation CreateVaultDeposit($currency: CurrencyEnum!, $amount: Float!) {\n  createVaultDeposit(currency: $currency, amount: $amount) {\n    id amount currency\n    user { id balances { available { amount currency __typename } vault { amount currency __typename } __typename } __typename }\n    __typename\n  }\n}\n",
+            new BetClass { currency = currencySelected.ToLower(), amount = sentamount }
+        );
+                
 
                 // Will output the HTML contents of the requested page
                 //Debug.WriteLine(restResponse.Content);
-                Data response = JsonConvert.DeserializeObject<Data>(restResponse.Content);
+                Data response = JsonConvert.DeserializeObject<Data>(json);
                 //System.Diagnostics.Debug.WriteLine(restResponse.Content);
                 if (response.errors != null)
                 {
@@ -1092,33 +1068,16 @@ namespace Limbo
         {
             try
             {
-                var mainurl = "http://localhost:5000/graphql?url=https://" + StakeSite + "/_api/graphql";
-                var request = new RestRequest(Method.POST);
-                var client = new RestClient(mainurl);
-                client.CookieContainer = cc;
-                client.UserAgent = UserAgent;
-                client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
-                BetQuery payload = new BetQuery();
-                payload.token = token;
-                payload.operationName = "RotateSeedPair";
-                payload.variables = new BetClass()
-                {
-                    seed = RandomString(10)
-                };
-                payload.query = "mutation RotateSeedPair($seed: String!) {\n  rotateSeedPair(seed: $seed) {\n    clientSeed {\n      user {\n        id\n        activeClientSeed {\n          id\n          seed\n          __typename\n        }\n        activeServerSeed {\n          id\n          nonce\n          seedHash\n          nextSeedHash\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n";
-                request.AddHeader("Content-Type", "application/json");
-                request.AddHeader("x-access-token", token);
-
-                request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
-                //request.AddJsonBody(payload);
-                //IRestResponse response = client.Execute(request);
-
-                var restResponse =
-                    await client.ExecuteAsync(request);
+                var json = await GraphQL(
+            "RotateSeedPair",
+            "mutation RotateSeedPair($seed: String!) {\n  rotateSeedPair(seed: $seed) {\n    clientSeed {\n      user {\n        id\n        activeClientSeed { id seed __typename }\n        activeServerSeed { id nonce seedHash nextSeedHash __typename }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n",
+            new BetClass { seed = RandomString(10) }
+        );
+                
 
                 // Will output the HTML contents of the requested page
                 //Debug.WriteLine(restResponse.Content);
-                Data response = JsonConvert.DeserializeObject<Data>(restResponse.Content);
+                Data response = JsonConvert.DeserializeObject<Data>(json);
                 //System.Diagnostics.Debug.WriteLine(restResponse.Content);
                 if (response.errors != null)
                 {
@@ -1195,30 +1154,14 @@ namespace Limbo
         {
             try
             {
-                var mainurl = "http://localhost:5000/graphql?url=https://" + StakeSite + "/_api/graphql";
-                var request = new RestRequest(Method.POST);
-                var client = new RestClient(mainurl);
-                client.CookieContainer = cc;
-                client.UserAgent = UserAgent;
-                client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
-
-                BetQuery payload = new BetQuery();
-                payload.token = token;
-                payload.operationName = "UserBalances";
-                payload.query = "query UserBalances {\n  user {\n    id\n    balances {\n      available {\n        amount\n        currency\n        __typename\n      }\n      vault {\n        amount\n        currency\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n";
-                request.AddHeader("Content-Type", "application/json");
-                request.AddHeader("x-access-token", token);
-
-                request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
-                //request.AddJsonBody(payload);
-                //IRestResponse response = client.Execute(request);
-
-                var restResponse =
-                    await client.ExecuteAsync(request);
+                var json = await GraphQL(
+                     "UserBalances",
+                     "query UserBalances {\n  user {\n    id\n    balances {\n      available {\n        amount\n        currency\n        __typename\n      }\n      vault {\n        amount\n        currency\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
+                 );
 
                 // Will output the HTML contents of the requested page
                 //Debug.WriteLine(restResponse.Content);
-                BalancesData response = JsonConvert.DeserializeObject<BalancesData>(restResponse.Content);
+                BalancesData response = JsonConvert.DeserializeObject<BalancesData>(json);
                 //System.Diagnostics.Debug.WriteLine(restResponse.Content);
                 if (response == null || response.errors != null)
                 {
