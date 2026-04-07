@@ -52,6 +52,11 @@
             this.profitLabel = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.textBox4 = new System.Windows.Forms.TextBox();
+            this.textBox3 = new System.Windows.Forms.TextBox();
+            this.label19 = new System.Windows.Forms.Label();
+            this.label17 = new System.Windows.Forms.Label();
+            this.btnWebViewLogin = new System.Windows.Forms.Button();
             this.textBox2 = new System.Windows.Forms.TextBox();
             this.CheckBtn = new System.Windows.Forms.Button();
             this.clearLinkbtn = new System.Windows.Forms.LinkLabel();
@@ -378,6 +383,11 @@
             // 
             // tabPage2
             // 
+            this.tabPage2.Controls.Add(this.textBox4);
+            this.tabPage2.Controls.Add(this.textBox3);
+            this.tabPage2.Controls.Add(this.label19);
+            this.tabPage2.Controls.Add(this.label17);
+            this.tabPage2.Controls.Add(this.btnWebViewLogin);
             this.tabPage2.Controls.Add(this.textBox2);
             this.tabPage2.Controls.Add(this.CheckBtn);
             this.tabPage2.Controls.Add(this.clearLinkbtn);
@@ -395,23 +405,67 @@
             this.tabPage2.Text = "Settings";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
+            // textBox4
+            // 
+            this.textBox4.Location = new System.Drawing.Point(294, 97);
+            this.textBox4.Name = "textBox4";
+            this.textBox4.Size = new System.Drawing.Size(145, 22);
+            this.textBox4.TabIndex = 13;
+            this.textBox4.TextChanged += new System.EventHandler(this.textBox4_TextChanged);
+            // 
+            // textBox3
+            // 
+            this.textBox3.Location = new System.Drawing.Point(97, 97);
+            this.textBox3.Name = "textBox3";
+            this.textBox3.Size = new System.Drawing.Size(136, 22);
+            this.textBox3.TabIndex = 12;
+            this.textBox3.TextChanged += new System.EventHandler(this.textBox3_TextChanged_1);
+            // 
+            // label19
+            // 
+            this.label19.AutoSize = true;
+            this.label19.Location = new System.Drawing.Point(243, 100);
+            this.label19.Name = "label19";
+            this.label19.Size = new System.Drawing.Size(45, 16);
+            this.label19.TabIndex = 11;
+            this.label19.Text = "Agent:";
+            // 
+            // label17
+            // 
+            this.label17.AutoSize = true;
+            this.label17.Location = new System.Drawing.Point(9, 100);
+            this.label17.Name = "label17";
+            this.label17.Size = new System.Drawing.Size(53, 16);
+            this.label17.TabIndex = 10;
+            this.label17.Text = "Cookie:";
+            // 
+            // btnWebViewLogin
+            // 
+            this.btnWebViewLogin.Location = new System.Drawing.Point(390, 37);
+            this.btnWebViewLogin.Name = "btnWebViewLogin";
+            this.btnWebViewLogin.Size = new System.Drawing.Size(101, 26);
+            this.btnWebViewLogin.TabIndex = 9;
+            this.btnWebViewLogin.Text = "Cookie Get";
+            this.btnWebViewLogin.UseVisualStyleBackColor = true;
+            this.btnWebViewLogin.Click += new System.EventHandler(this.btnWebViewLogin_Click);
+            // 
             // textBox2
             // 
             this.textBox2.Location = new System.Drawing.Point(97, 68);
             this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(192, 22);
+            this.textBox2.Size = new System.Drawing.Size(136, 22);
             this.textBox2.TabIndex = 8;
             this.textBox2.Text = "stake.com";
             this.textBox2.TextChanged += new System.EventHandler(this.textBox2_TextChanged_1);
             // 
             // CheckBtn
             // 
-            this.CheckBtn.Location = new System.Drawing.Point(299, 39);
+            this.CheckBtn.Location = new System.Drawing.Point(299, 37);
             this.CheckBtn.Margin = new System.Windows.Forms.Padding(4);
             this.CheckBtn.Name = "CheckBtn";
-            this.CheckBtn.Size = new System.Drawing.Size(100, 26);
+            this.CheckBtn.Size = new System.Drawing.Size(82, 26);
             this.CheckBtn.TabIndex = 7;
-            this.CheckBtn.Text = "Get";
+            this.CheckBtn.Text = "Login";
             this.CheckBtn.UseVisualStyleBackColor = true;
             this.CheckBtn.Click += new System.EventHandler(this.CheckBtn_Click);
             // 
@@ -985,6 +1039,11 @@
         private System.Windows.Forms.TextBox NonceStopBox;
         private System.Windows.Forms.LinkLabel ResetBoxSeed;
         private System.Windows.Forms.TextBox textBox2;
+        private System.Windows.Forms.Label label17;
+        private System.Windows.Forms.Button btnWebViewLogin;
+        private System.Windows.Forms.TextBox textBox4;
+        private System.Windows.Forms.TextBox textBox3;
+        private System.Windows.Forms.Label label19;
     }
 }
 

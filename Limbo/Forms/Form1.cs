@@ -1,4 +1,5 @@
 ﻿using FastColoredTextBoxNS;
+using Keno;
 using LiveCharts;
 using LiveCharts.Defaults;
 using LiveCharts.WinForms;
@@ -13,11 +14,11 @@ using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Net;
 using System.Security.Authentication;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Net;
 using WebSocket4Net;
 
 namespace Limbo
@@ -211,8 +212,13 @@ namespace Limbo
             richTextBox1.TextChanged += this.richTextBox1_TextChanged;
 
             richTextBox1.Text = Properties.Settings.Default.textCode;
+            textBox3.Text = Properties.Settings.Default.cookie;
+            textBox4.Text = Properties.Settings.Default.agent;
 
-            BrowserFetch.StartServer();
+            UserAgent = textBox4.Text;
+            ClearanceCookie = textBox3.Text;
+
+
 
         }
         private void listBox3_KeyDown(object sender, KeyEventArgs e)
@@ -242,31 +248,7 @@ namespace Limbo
 
         }
 
-        private async Task<string> GraphQL(string operationName, string query,
-                                            BetClass variables = null)
-        {
-            var url = "https://" + StakeSite + "/_api/graphql";
-
-            var body = new BetSend
-            {
-                operationName = operationName,
-                query = query,
-                variables = variables
-            };
-
-            var options = new
-            {
-                method = "POST",
-                headers = new Dictionary<string, string>
-        {
-            { "Content-Type", "application/json" },
-            { "x-access-token", token }
-        },
-                body = body
-            };
-
-            return await BrowserFetch.FetchAsync(url, options);
-        }
+        
         private void RegisterLua()
         {
 
@@ -731,20 +713,36 @@ namespace Limbo
             {
                 if (running)
                 {
-                    var json = await GraphQL(
-            "LimboBet",
-            "mutation LimboBet($amount: Float!, $multiplierTarget: Float!, $currency: CurrencyEnum!, $identifier: String!) {\n limboBet(\n amount: $amount\n currency: $currency\n multiplierTarget: $multiplierTarget\n identifier: $identifier\n  ) {\n...CasinoBet\n state {\n...CasinoGameLimbo\n    }\n  }\n}\n\nfragment CasinoBet on CasinoBet {\n id\n active\n payoutMultiplier\n amountMultiplier\n amount\n payout\n updatedAt\n currency\n game\n user {\n id\n name\n  }\n}\n\nfragment CasinoGameLimbo on CasinoGameLimbo {\n result\n multiplierTarget\n}\n",
-            new BetClass
-            {
-                currency = currencySelected,
-                amount = amount,
-                multiplierTarget = target,
-                identifier = RandomString(21)
-            }
-                   );
+                    var mainurl = "https://" + StakeSite + "/_api/graphql";
+                    var request = new RestRequest(Method.POST);
+                    var client = new RestClient(mainurl);
+                    client.CookieContainer = cc;
+                    client.UserAgent = UserAgent;
+                    client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
+                    BetQuery payload = new BetQuery();
+                    payload.token = token;
+                    payload.variables = new BetClass()
+                    {
+                        currency = currencySelected,
+                        amount = amount,
+                        multiplierTarget = target,
+                        identifier = RandomString(21)
+
+                    };
+
+                    payload.query = "mutation LimboBet($amount: Float!, $multiplierTarget: Float!, $currency: CurrencyEnum!, $identifier: String!) {\n limboBet(\n amount: $amount\n currency: $currency\n multiplierTarget: $multiplierTarget\n identifier: $identifier\n  ) {\n...CasinoBet\n state {\n...CasinoGameLimbo\n    }\n  }\n}\n\nfragment CasinoBet on CasinoBet {\n id\n active\n payoutMultiplier\n amountMultiplier\n amount\n payout\n updatedAt\n currency\n game\n user {\n id\n name\n  }\n}\n\nfragment CasinoGameLimbo on CasinoGameLimbo {\n result\n multiplierTarget\n}\n";
+
+                    request.AddHeader("Content-Type", "application/json");
+                    request.AddHeader("x-access-token", token);
+
+                    request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
+
+
+                    var restResponse =
+                        await client.ExecuteAsync(request);
 
                     button1.Enabled = true;
-                    Data response = JsonConvert.DeserializeObject<Data>(json);
+                    Data response = JsonConvert.DeserializeObject<Data>(restResponse.Content);
 
                     if (response.errors != null)
                     {
@@ -873,13 +871,29 @@ namespace Limbo
         {
             try
             {
-                var json = await GraphQL(
-                     "UserBalances",
-                     "query UserBalances {\n  user {\n    id\n    balances {\n      available {\n        amount\n        currency\n        __typename\n      }\n      vault {\n        amount\n        currency\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
-                 );
+                var mainurl = "https://" + StakeSite + "/_api/graphql";
+                var request = new RestRequest(Method.POST);
+                var client = new RestClient(mainurl);
+                client.CookieContainer = cc;
+                client.UserAgent = UserAgent;
+                client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
+                BetQuery payload = new BetQuery();
+                payload.token = token;
+                payload.operationName = "UserBalances";
+                payload.query = "query UserBalances {\n  user {\n    id\n    balances {\n      available {\n        amount\n        currency\n        __typename\n      }\n      vault {\n        amount\n        currency\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n";
+
+                request.AddHeader("Content-Type", "application/json");
+                request.AddHeader("x-access-token", token);
+
+                request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
+
+
+
+                var restResponse =
+                    await client.ExecuteAsync(request);
 
                 //Debug.WriteLine(restResponse.Content);
-                BalancesData response = JsonConvert.DeserializeObject<BalancesData>(json);
+                BalancesData response = JsonConvert.DeserializeObject<BalancesData>(restResponse.Content);
 
 
                 if (response.errors != null)
@@ -1034,16 +1048,35 @@ namespace Limbo
         {
             try
             {
-                var json = await GraphQL(
-            "CreateVaultDeposit",
-            "mutation CreateVaultDeposit($currency: CurrencyEnum!, $amount: Float!) {\n  createVaultDeposit(currency: $currency, amount: $amount) {\n    id amount currency\n    user { id balances { available { amount currency __typename } vault { amount currency __typename } __typename } __typename }\n    __typename\n  }\n}\n",
-            new BetClass { currency = currencySelected.ToLower(), amount = sentamount }
-        );
-                
+                var mainurl = "https://" + StakeSite + "/_api/graphql";
+                var request = new RestRequest(Method.POST);
+                var client = new RestClient(mainurl);
+                client.CookieContainer = cc;
+                client.UserAgent = UserAgent;
+                client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
+                BetQuery payload = new BetQuery();
+                payload.token = token;
+                payload.operationName = "CreateVaultDeposit";
+                payload.variables = new BetClass()
+                {
+                    currency = currencySelected.ToLower(),
+                    amount = sentamount
+                };
+                payload.query = "mutation CreateVaultDeposit($currency: CurrencyEnum!, $amount: Float!) {\n  createVaultDeposit(currency: $currency, amount: $amount) {\n    id\n    amount\n    currency\n    user {\n      id\n      balances {\n        available {\n          amount\n          currency\n          __typename\n        }\n        vault {\n          amount\n          currency\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n";
+                request.AddHeader("Content-Type", "application/json");
+                request.AddHeader("x-access-token", token);
+
+                request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
+                //request.AddJsonBody(payload);
+                //IRestResponse response = client.Execute(request);
+
+                var restResponse =
+                    await client.ExecuteAsync(request);
+
 
                 // Will output the HTML contents of the requested page
                 //Debug.WriteLine(restResponse.Content);
-                Data response = JsonConvert.DeserializeObject<Data>(json);
+                Data response = JsonConvert.DeserializeObject<Data>(restResponse.Content);
                 //System.Diagnostics.Debug.WriteLine(restResponse.Content);
                 if (response.errors != null)
                 {
@@ -1068,16 +1101,32 @@ namespace Limbo
         {
             try
             {
-                var json = await GraphQL(
-            "RotateSeedPair",
-            "mutation RotateSeedPair($seed: String!) {\n  rotateSeedPair(seed: $seed) {\n    clientSeed {\n      user {\n        id\n        activeClientSeed { id seed __typename }\n        activeServerSeed { id nonce seedHash nextSeedHash __typename }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n",
-            new BetClass { seed = RandomString(10) }
-        );
-                
+                var mainurl = "https://" + StakeSite + "/_api/graphql";
+                var request = new RestRequest(Method.POST);
+                var client = new RestClient(mainurl);
+                client.CookieContainer = cc;
+                client.UserAgent = UserAgent;
+                client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
+                BetQuery payload = new BetQuery();
+                payload.token = token;
+                payload.operationName = "RotateSeedPair";
+                payload.variables = new BetClass()
+                {
+                    seed = RandomString(10)
+                };
+                payload.query = "mutation RotateSeedPair($seed: String!) {\n  rotateSeedPair(seed: $seed) {\n    clientSeed {\n      user {\n        id\n        activeClientSeed {\n          id\n          seed\n          __typename\n        }\n        activeServerSeed {\n          id\n          nonce\n          seedHash\n          nextSeedHash\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n";
+                request.AddHeader("Content-Type", "application/json");
+                request.AddHeader("x-access-token", token);
 
+                request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
+                //request.AddJsonBody(payload);
+                //IRestResponse response = client.Execute(request);
+
+                var restResponse =
+                    await client.ExecuteAsync(request);
                 // Will output the HTML contents of the requested page
                 //Debug.WriteLine(restResponse.Content);
-                Data response = JsonConvert.DeserializeObject<Data>(json);
+                Data response = JsonConvert.DeserializeObject<Data>(restResponse.Content);
                 //System.Diagnostics.Debug.WriteLine(restResponse.Content);
                 if (response.errors != null)
                 {
@@ -1154,14 +1203,30 @@ namespace Limbo
         {
             try
             {
-                var json = await GraphQL(
-                     "UserBalances",
-                     "query UserBalances {\n  user {\n    id\n    balances {\n      available {\n        amount\n        currency\n        __typename\n      }\n      vault {\n        amount\n        currency\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
-                 );
+                var mainurl = "https://" + StakeSite + "/_api/graphql";
+                var request = new RestRequest(Method.POST);
+                var client = new RestClient(mainurl);
+                client.CookieContainer = cc;
+                client.UserAgent = UserAgent;
+                client.CookieContainer.Add(new Cookie("cf_clearance", ClearanceCookie, "/", StakeSite));
+
+                BetQuery payload = new BetQuery();
+                payload.token = token;
+                payload.operationName = "UserBalances";
+                payload.query = "query UserBalances {\n  user {\n    id\n    balances {\n      available {\n        amount\n        currency\n        __typename\n      }\n      vault {\n        amount\n        currency\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n";
+                request.AddHeader("Content-Type", "application/json");
+                request.AddHeader("x-access-token", token);
+
+                request.AddParameter("application/json", JsonConvert.SerializeObject(payload), ParameterType.RequestBody);
+                //request.AddJsonBody(payload);
+                //IRestResponse response = client.Execute(request);
+
+                var restResponse =
+                    await client.ExecuteAsync(request);
 
                 // Will output the HTML contents of the requested page
                 //Debug.WriteLine(restResponse.Content);
-                BalancesData response = JsonConvert.DeserializeObject<BalancesData>(json);
+                BalancesData response = JsonConvert.DeserializeObject<BalancesData>(restResponse.Content);
                 //System.Diagnostics.Debug.WriteLine(restResponse.Content);
                 if (response == null || response.errors != null)
                 {
@@ -1530,6 +1595,51 @@ namespace Limbo
         {
             StakeSite = textBox2.Text.ToLower();
             Properties.Settings.Default.indexSite = textBox2.Text;
+        }
+
+        private void btnWebViewLogin_Click(object sender, EventArgs e)
+        {
+            using (var loginForm = new WebViewLogin(StakeSite))
+            {
+                // ShowDialog blocks until user clicks Done (DialogResult.OK)
+                var result = loginForm.ShowDialog(this);
+
+                if (result == DialogResult.OK)
+                {
+                    // Apply captured values
+                    ClearanceCookie = loginForm.CapturedClearance;
+                    UserAgent = loginForm.CapturedUserAgent;
+
+                    // Update UI text fields
+                    textBox3.Text = ClearanceCookie;
+                    textBox4.Text = UserAgent;
+
+                    // Save to settings
+                    Properties.Settings.Default.cookie = ClearanceCookie;
+                    Properties.Settings.Default.agent = UserAgent;
+                    Properties.Settings.Default.Save();
+
+                    // Rebuild CookieContainer fresh
+                    cc = new CookieContainer();
+
+                    // Verify connection with new cookies
+                    //await Authorize();
+                }
+                else
+                {
+                   
+                }
+            }
+        }
+
+        private void textBox3_TextChanged_1(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.cookie = textBox3.Text;
+        }
+
+        private void textBox4_TextChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.agent = textBox4.Text;
         }
     }
     public static class ListViewExtensions
