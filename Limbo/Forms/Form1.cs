@@ -26,6 +26,9 @@ namespace Limbo
     public partial class Form1 : Form
     {
 
+		public List<string> currencyList = new List<string>();
+		public int currencyIndex = 0;
+		
         CookieContainer cc = new CookieContainer();
         private WebSocket chat_socket { get; set; }
         private FastColoredTextBox richTextBox1;
@@ -105,9 +108,16 @@ namespace Limbo
         private void fillCurrencies()
         {
             foreach (var item in currenciesAvailable)
-            {
-                //currencyComboBox.Items.Add(item);
-            }
+			{
+				// currencyComboBox.Items.Add(item);
+			}
+			
+			// Restore saved currency if it exists in the static list
+			if (!string.IsNullOrEmpty(Properties.Settings.Default.currency))
+			{
+				currencySelected = Properties.Settings.Default.currency;
+				currencyIndex = Properties.Settings.Default.currencyIndex;
+			}
         }
 
         public Form1()
@@ -557,12 +567,21 @@ namespace Limbo
         }
 
         private async void currencyComboBox_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            currencySelected = currencyComboBox.Text.ToLower();
-            //await CheckBalance();
-            //await Authorize();
-            balanceLabel.Text = String.Format("{0} {1}", currentBal.ToString("0.00000000"), currencySelected);
-        }
+		{
+			if (currencyComboBox.SelectedIndex >= 0)
+			{
+				currencyIndex = currencyComboBox.SelectedIndex;
+				currencySelected = currencyComboBox.Text.ToLower();
+				
+				// Save to settings
+				Properties.Settings.Default.currency = currencySelected;
+				Properties.Settings.Default.currencyIndex = currencyIndex;
+				Properties.Settings.Default.Save();
+				
+				await CheckBalance();
+				balanceLabel.Text = String.Format("{0} {1}", currentBal.ToString("0.00000000"), currencySelected);
+			}
+		}
 
         private void SiteComboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -803,29 +822,54 @@ namespace Limbo
         //  CheckBalance
         // ═════════════════════════════════════════════════════════════════════════
         public async Task CheckBalance()
-        {
-           // currencyComboBox.Items.Clear();
-            try
-            {
-                var json = await GraphQL(
-                    "UserBalances",
-                    "query UserBalances {\n  user {\n    id\n    balances {\n      available {\n        amount\n        currency\n        __typename\n      }\n      vault {\n        amount\n        currency\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
-                );
-                BalancesData response = JsonConvert.DeserializeObject<BalancesData>(json);
-                if (response?.data != null)
-                {
-                    for (var i = 0; i < response.data.user.balances.Count; i++)
-                    {
-                        if (response.data.user.balances[i].available.currency == currencySelected.ToLower())
-                        {
-                            currentBal = response.data.user.balances[i].available.amount;
-                            balanceLabel.Text = String.Format("{0} {1}", currentBal.ToString("0.00000000"), currencySelected);
-                        }
-                    }
-                }
-            }
-            catch { }
-        }
+		{
+			try
+			{
+				var json = await GraphQL(
+					"UserBalances",
+					"query UserBalances {\n  user {\n    id\n    balances {\n      available {\n        amount\n        currency\n        __typename\n      }\n      vault {\n        amount\n        currency\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
+				);
+				BalancesData response = JsonConvert.DeserializeObject<BalancesData>(json);
+				if (response?.data != null)
+				{
+					// If currency list is empty, populate it
+					if (currencyList.Count == 0)
+					{
+						currencyComboBox.Items.Clear();
+						currencyList.Clear();
+						
+						for (var i = 0; i < response.data.user.balances.Count; i++)
+						{
+							string currencyName = response.data.user.balances[i].available.currency;
+							currencyList.Add(currencyName);
+							currencyComboBox.Items.Add(currencyName);
+						}
+						
+						// Restore saved currency selection
+						if (currencyComboBox.Items.Count > currencyIndex && currencyIndex >= 0)
+						{
+							currencyComboBox.SelectedIndex = currencyIndex;
+							currencySelected = currencyList[currencyIndex];
+						}
+						else if (currencyComboBox.Items.Count > 0)
+						{
+							currencyComboBox.SelectedIndex = 0;
+							currencySelected = currencyList[0];
+						}
+					}
+					
+					for (var i = 0; i < response.data.user.balances.Count; i++)
+					{
+						if (response.data.user.balances[i].available.currency == currencySelected.ToLower())
+						{
+							currentBal = response.data.user.balances[i].available.amount;
+							balanceLabel.Text = String.Format("{0} {1}", currentBal.ToString("0.00000000"), currencySelected);
+						}
+					}
+				}
+			}
+			catch { }
+		}
 
         public void TimerFunc(long begin)
         {
@@ -983,37 +1027,60 @@ namespace Limbo
         }
 
         private async Task Authorize()
-        {
-           // currencyComboBox.Items.Clear();
-            try
-            {
-                var json = await GraphQL(
-                    "UserBalances",
-                    "query UserBalances {\n  user {\n    id\n    balances {\n      available {\n        amount\n        currency\n        __typename\n      }\n      vault {\n        amount\n        currency\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
-                );
-                BalancesData response = JsonConvert.DeserializeObject<BalancesData>(json);
-                if (response == null || response.errors != null)
-                {
-                    toolStripStatusLabel1.Text = "Disconnected";
-                }
-                else if (response.data != null)
-                {
-                    toolStripStatusLabel1.Text = "Connected.";
-                    for (var i = 0; i < response.data.user.balances.Count; i++)
-                    {
-                        if (response.data.user.balances[i].available.currency == currencySelected.ToLower())
-                        {
-                            currentBal = response.data.user.balances[i].available.amount;
-                            balanceLabel.Text = String.Format("{0} {1}", currentBal.ToString("0.00000000"), currencySelected);
-                        }
-                    }
-                    currencyComboBox.Items.Clear();
-                    for (var k = 0; k < response.data.user.balances.Count; k++)
-                        currencyComboBox.Items.Add(response.data.user.balances[k].available.currency);
-                }
-            }
-            catch { }
-        }
+		{
+			try
+			{
+				var json = await GraphQL(
+					"UserBalances",
+					"query UserBalances {\n  user {\n    id\n    balances {\n      available {\n        amount\n        currency\n        __typename\n      }\n      vault {\n        amount\n        currency\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
+				);
+				BalancesData response = JsonConvert.DeserializeObject<BalancesData>(json);
+				if (response == null || response.errors != null)
+				{
+					toolStripStatusLabel1.Text = "Disconnected";
+				}
+				else if (response.data != null)
+				{
+					toolStripStatusLabel1.Text = "Connected.";
+					
+					// Save current selection before clearing
+					string currentSelected = currencyList.Count > 0 ? currencyList[currencyIndex] 
+						: (!string.IsNullOrEmpty(currencySelected) ? currencySelected : Properties.Settings.Default.currency);
+					
+					currencyComboBox.Items.Clear();
+					currencyList.Clear();
+					
+					for (var i = 0; i < response.data.user.balances.Count; i++)
+					{
+						string currencyName = response.data.user.balances[i].available.currency;
+						currencyList.Add(currencyName);
+						currencyComboBox.Items.Add(currencyName);
+						
+						if (currencyName == currencySelected.ToLower())
+						{
+							currentBal = response.data.user.balances[i].available.amount;
+							balanceLabel.Text = String.Format("{0} {1}", currentBal.ToString("0.00000000"), currencySelected);
+						}
+					}
+					
+					// Restore previously selected currency
+					int savedIndex = currencyList.FindIndex(c => c.Equals(currentSelected, StringComparison.OrdinalIgnoreCase));
+					currencyIndex = savedIndex >= 0 ? savedIndex : 0;
+					
+					if (currencyComboBox.Items.Count > currencyIndex && currencyIndex >= 0)
+					{
+						currencyComboBox.SelectedIndex = currencyIndex;
+						currencySelected = currencyList[currencyIndex];
+					}
+					else if (currencyComboBox.Items.Count > 0)
+					{
+						currencyComboBox.SelectedIndex = 0;
+						currencySelected = currencyList[0];
+					}
+				}
+			}
+			catch { }
+		}
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -1023,7 +1090,20 @@ namespace Limbo
             ClientSeedBox.Text = Properties.Settings.Default.clientSeed;
             NonceBox.Text      = Properties.Settings.Default.nonce.ToString();
             NonceStopBox.Text  = Properties.Settings.Default.nonceStop.ToString();
-        }
+        
+			currencySelected = Properties.Settings.Default.currency;
+			if (string.IsNullOrEmpty(currencySelected))
+				currencySelected = "btc";
+			
+			currencyIndex = Properties.Settings.Default.currencyIndex;
+			if (currencyIndex < 0) currencyIndex = 0;
+			
+			// Set the currency combo box if items are already loaded
+			if (currencyComboBox.Items.Count > currencyIndex && currencyIndex >= 0)
+			{
+				currencyComboBox.SelectedIndex = currencyIndex;
+			}
+		}
 
         private void SimulateRun()
         {
