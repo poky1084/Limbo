@@ -1,4 +1,4 @@
-﻿namespace Limbo
+namespace Limbo
 {
     partial class Form1
     {
@@ -52,11 +52,13 @@
             this.profitLabel = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.cmbFetchMode = new System.Windows.Forms.ComboBox();
+            this.btnGetCookie = new System.Windows.Forms.Button();
+            this.lblCookieStatus = new System.Windows.Forms.Label();
             this.textBox4 = new System.Windows.Forms.TextBox();
             this.textBox3 = new System.Windows.Forms.TextBox();
             this.label19 = new System.Windows.Forms.Label();
             this.label17 = new System.Windows.Forms.Label();
-            this.btnWebViewLogin = new System.Windows.Forms.Button();
             this.textBox2 = new System.Windows.Forms.TextBox();
             this.CheckBtn = new System.Windows.Forms.Button();
             this.clearLinkbtn = new System.Windows.Forms.LinkLabel();
@@ -383,11 +385,13 @@
             // 
             // tabPage2
             // 
+            this.tabPage2.Controls.Add(this.cmbFetchMode);
+            this.tabPage2.Controls.Add(this.btnGetCookie);
+            this.tabPage2.Controls.Add(this.lblCookieStatus);
             this.tabPage2.Controls.Add(this.textBox4);
             this.tabPage2.Controls.Add(this.textBox3);
             this.tabPage2.Controls.Add(this.label19);
             this.tabPage2.Controls.Add(this.label17);
-            this.tabPage2.Controls.Add(this.btnWebViewLogin);
             this.tabPage2.Controls.Add(this.textBox2);
             this.tabPage2.Controls.Add(this.CheckBtn);
             this.tabPage2.Controls.Add(this.clearLinkbtn);
@@ -405,12 +409,42 @@
             this.tabPage2.Text = "Settings";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
+            // cmbFetchMode
+            // 
+            this.cmbFetchMode.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbFetchMode.Items.AddRange(new object[] {
+            "Use Cookie",
+            "Use Extension"});
+            this.cmbFetchMode.Location = new System.Drawing.Point(274, 6);
+            this.cmbFetchMode.Name = "cmbFetchMode";
+            this.cmbFetchMode.Size = new System.Drawing.Size(122, 24);
+            this.cmbFetchMode.TabIndex = 50;
+            this.cmbFetchMode.SelectedIndexChanged += new System.EventHandler(this.cmbFetchMode_SelectedIndexChanged);
+            // 
+            // btnGetCookie
+            // 
+            this.btnGetCookie.Location = new System.Drawing.Point(403, 8);
+            this.btnGetCookie.Name = "btnGetCookie";
+            this.btnGetCookie.Size = new System.Drawing.Size(90, 27);
+            this.btnGetCookie.TabIndex = 51;
+            this.btnGetCookie.Text = "Get Cookie";
+            this.btnGetCookie.UseVisualStyleBackColor = true;
+            this.btnGetCookie.Click += new System.EventHandler(this.btnGetCookie_Click);
+            // 
+            // lblCookieStatus
+            // 
+            this.lblCookieStatus.Location = new System.Drawing.Point(384, 40);
+            this.lblCookieStatus.Name = "lblCookieStatus";
+            this.lblCookieStatus.Size = new System.Drawing.Size(117, 20);
+            this.lblCookieStatus.TabIndex = 52;
+            // 
             // textBox4
             // 
             this.textBox4.Location = new System.Drawing.Point(294, 97);
             this.textBox4.Name = "textBox4";
             this.textBox4.Size = new System.Drawing.Size(145, 22);
             this.textBox4.TabIndex = 13;
+            this.textBox4.Visible = false;
             this.textBox4.TextChanged += new System.EventHandler(this.textBox4_TextChanged);
             // 
             // textBox3
@@ -419,6 +453,7 @@
             this.textBox3.Name = "textBox3";
             this.textBox3.Size = new System.Drawing.Size(136, 22);
             this.textBox3.TabIndex = 12;
+            this.textBox3.Visible = false;
             this.textBox3.TextChanged += new System.EventHandler(this.textBox3_TextChanged_1);
             // 
             // label19
@@ -429,6 +464,7 @@
             this.label19.Size = new System.Drawing.Size(45, 16);
             this.label19.TabIndex = 11;
             this.label19.Text = "Agent:";
+            this.label19.Visible = false;
             // 
             // label17
             // 
@@ -438,16 +474,7 @@
             this.label17.Size = new System.Drawing.Size(53, 16);
             this.label17.TabIndex = 10;
             this.label17.Text = "Cookie:";
-            // 
-            // btnWebViewLogin
-            // 
-            this.btnWebViewLogin.Location = new System.Drawing.Point(390, 37);
-            this.btnWebViewLogin.Name = "btnWebViewLogin";
-            this.btnWebViewLogin.Size = new System.Drawing.Size(101, 26);
-            this.btnWebViewLogin.TabIndex = 9;
-            this.btnWebViewLogin.Text = "Cookie Get";
-            this.btnWebViewLogin.UseVisualStyleBackColor = true;
-            this.btnWebViewLogin.Click += new System.EventHandler(this.btnWebViewLogin_Click);
+            this.label17.Visible = false;
             // 
             // textBox2
             // 
@@ -460,7 +487,7 @@
             // 
             // CheckBtn
             // 
-            this.CheckBtn.Location = new System.Drawing.Point(299, 37);
+            this.CheckBtn.Location = new System.Drawing.Point(294, 37);
             this.CheckBtn.Margin = new System.Windows.Forms.Padding(4);
             this.CheckBtn.Name = "CheckBtn";
             this.CheckBtn.Size = new System.Drawing.Size(82, 26);
@@ -504,6 +531,7 @@
             // 
             // currencyComboBox
             // 
+            this.currencyComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.currencyComboBox.FormattingEnabled = true;
             this.currencyComboBox.Location = new System.Drawing.Point(97, 39);
             this.currencyComboBox.Margin = new System.Windows.Forms.Padding(4);
@@ -528,7 +556,7 @@
             this.textBox1.Location = new System.Drawing.Point(97, 10);
             this.textBox1.Margin = new System.Windows.Forms.Padding(4);
             this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(394, 22);
+            this.textBox1.Size = new System.Drawing.Size(170, 22);
             this.textBox1.TabIndex = 0;
             this.textBox1.TextChanged += new System.EventHandler(this.textBox1_TextChanged);
             // 
@@ -972,7 +1000,10 @@
         }
 
         #endregion
+
+        // ── Standard controls ─────────────────────────────────────────────────────
         private System.Windows.Forms.StatusStrip statusStrip1;
+        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel1;
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage tabPage1;
         private System.Windows.Forms.TabPage tabPage2;
@@ -1022,7 +1053,6 @@
         private System.Windows.Forms.TextBox CommandBox2;
         private System.Windows.Forms.Button CommandButton2;
         private System.Windows.Forms.TabPage tabPage3;
-        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel1;
         private System.Windows.Forms.TabPage tabPage4;
         private System.Windows.Forms.ListBox listBox2;
         private System.Windows.Forms.ListBox listBox1;
@@ -1040,10 +1070,11 @@
         private System.Windows.Forms.LinkLabel ResetBoxSeed;
         private System.Windows.Forms.TextBox textBox2;
         private System.Windows.Forms.Label label17;
-        private System.Windows.Forms.Button btnWebViewLogin;
         private System.Windows.Forms.TextBox textBox4;
         private System.Windows.Forms.TextBox textBox3;
         private System.Windows.Forms.Label label19;
+        private System.Windows.Forms.Button btnGetCookie;
+        private System.Windows.Forms.Label lblCookieStatus;
+        private System.Windows.Forms.ComboBox cmbFetchMode;
     }
 }
-
